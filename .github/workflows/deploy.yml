@@ -2,9 +2,8 @@ name: Simple-SSH-Deploy
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [main]          # деплой при пуше в main
+  workflow_dispatch:          # и руками «Run workflow»
 
 jobs:
   deploy:
@@ -17,28 +16,33 @@ jobs:
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host:     ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
-          port: ${{ secrets.SSH_PORT || 22 }}
+          key:      ${{ secrets.SSH_KEY }}
+          port:     ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
             cd /opt/mail
 
-            # 1) Гарантируем чистый репозиторий
+            # --- 1) устраняем "dubious ownership" ---
+            git config --global --add safe.directory /opt/mail
+
+            # --- 2) подтягиваем свежий код ---
             git fetch --all
             git reset --hard origin/main
             git clean -fd
 
-            # 2) Пересобираем контейнеры без кэша
-            docker compose down --remove-orphans
-            docker compose up -d --build --no-cache
+            # --- 3) пересобираем контейнеры ---
+            docker-compose down --remove-orphans
+            docker-compose up -d --build --no-cache
 
-            # 3) Убираем dangling-образы
+            # --- 4) чистим dangling‑образы ---
             docker image prune -f
 
-            # 4) Сбрасываем кеш Cloudflare
-            curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE }}/purge_cache" \
-              -H "Authorization: Bearer ${{ secrets.CF_TOKEN }}" \
-              -H "Content-Type: application/json" \
-              --data '{"purge_everything":true}'
+            # --- 5) сбрасываем кэш Cloudflare (если заданы секреты) ---
+            if [ -n "${{ secrets.CF_ZONE }}" ] && [ -n "${{ secrets.CF_TOKEN }}" ]; then
+              curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE }}/purge_cache" \
+                   -H "Authorization: Bearer ${{ secrets.CF_TOKEN }}" \
+                   -H "Content-Type: application/json" \
+                   --data '{"purge_everything":true}'
+            fi
