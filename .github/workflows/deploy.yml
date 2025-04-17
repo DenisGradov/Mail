@@ -1,43 +1,36 @@
-name: Simple-SSH-Deploy
+name: Deploy-via-SCP
 
 on:
   push:
-    branches:
-      - main
-  workflow_dispatch:
+    branches: [main]
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Deploy over SSH
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Sync code to server via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host:      ${{ secrets.SSH_HOST }}
+          username:  ${{ secrets.SSH_USER }}
+          key:       ${{ secrets.SSH_KEY }}
+          port:      ${{ secrets.SSH_PORT || 22 }}
+          source:    "./"               # весь репозиторий
+          target:    "/opt/mail"        # куда на сервере
+
+      - name: Docker деплой на сервере
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host:     ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key:      ${{ secrets.SSH_KEY }}
+          port:     ${{ secrets.SSH_PORT || 22 }}
           script: |
-            set -e
             cd /opt/mail
-
-            # Синхронизируем код
-            git fetch --all
-            git reset --hard origin/main
-            git clean -fd
-
-            # Пересобираем без кеша
             docker-compose down -v --remove-orphans
             docker-compose up -d --build --no-cache
-
-            # Чистим Cloudflare-кэш
-            CF_TOKEN="${{ secrets.CF_TOKEN }}"
-            CF_ZONE="${{ secrets.CF_ZONE }}"
-            curl -X POST "https://api.cloudflare.com/client/v4/zones/${CF_ZONE}/purge_cache" \
-              -H "Authorization: Bearer ${CF_TOKEN}" \
-              -H "Content-Type: application/json" \
-              --data '{"purge_everything":true}'
-
-            # Убираем dangling-образы
             docker image prune -f
