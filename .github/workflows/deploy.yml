@@ -2,8 +2,8 @@ name: Simple-SSH-Deploy
 
 on:
   push:
-    branches: [main]          # деплой при пуше в main
-  workflow_dispatch:          # и руками «Run workflow»
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   deploy:
@@ -24,25 +24,20 @@ jobs:
             set -e
             cd /opt/mail
 
-            # --- 1) устраняем "dubious ownership" ---
+            # раз и навсегда: каталог безопасный
             git config --global --add safe.directory /opt/mail
 
-            # --- 2) подтягиваем свежий код ---
+            # ставим SSH‑remote вместо https://github.com/…
+            git remote set-url origin git@github.com:DenisGradov/Mail.git
+
+            # тянем свежий код
             git fetch --all
             git reset --hard origin/main
             git clean -fd
 
-            # --- 3) пересобираем контейнеры ---
+            # перезапускаем контейнеры
             docker-compose down --remove-orphans
             docker-compose up -d --build --no-cache
 
-            # --- 4) чистим dangling‑образы ---
+            # чистим dangling‑образы
             docker image prune -f
-
-            # --- 5) сбрасываем кэш Cloudflare (если заданы секреты) ---
-            if [ -n "${{ secrets.CF_ZONE }}" ] && [ -n "${{ secrets.CF_TOKEN }}" ]; then
-              curl -X POST "https://api.cloudflare.com/client/v4/zones/${{ secrets.CF_ZONE }}/purge_cache" \
-                   -H "Authorization: Bearer ${{ secrets.CF_TOKEN }}" \
-                   -H "Content-Type: application/json" \
-                   --data '{"purge_everything":true}'
-            fi
