@@ -1,0 +1,28 @@
+name: Simple‑SSH‑Deploy
+
+on:
+  push:
+    branches: ["main"]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Deploy over SSH
+        uses: appleboy/ssh-action@v1.2.2          # свежий релиз — Mar 09 2025 :contentReference[oaicite:0]{index=0}
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/mail                    # где лежит проект
+            git pull                        # тянем последний коммит
+
+            # Собираем и запускаем контейнеры на «кривых» портах
+            docker compose down --remove-orphans
+            docker compose up -d --build
+            docker image prune -f
