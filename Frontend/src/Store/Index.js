@@ -1,2 +1,2 @@
-export { useUserStore } from './user';
-export { useLoaderStore } from './loader';
+export { useUserStore } from './User';
+export { useLoaderStore } from './Loader';
