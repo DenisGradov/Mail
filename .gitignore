@@ -8,6 +8,8 @@ build/
 *.log
 *.sqlite
 *.sqlite3
+.env.backend
+*.db
 
 # Backend
 Backend/node_modules/
