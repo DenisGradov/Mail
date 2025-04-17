@@ -1,0 +1,35 @@
+# Общие
+node_modules/
+dist/
+build/
+.env
+.env.*
+.DS_Store
+*.log
+*.sqlite
+*.sqlite3
+
+# Backend
+Backend/node_modules/
+Backend/.env
+Backend/*.log
+Backend/*.sqlite
+Backend/*.sqlite3
+Backend/*.db
+Backend/dist/
+Backend/build/
+
+# Frontend
+Frontend/node_modules/
+Frontend/.env
+Frontend/.env.*
+Frontend/dist/
+Frontend/build/
+Frontend/.vite/
+
+# IDE / OS специфичное
+.idea/
+.vscode/
+*.swp
+Thumbs.db
+Desktop.ini
