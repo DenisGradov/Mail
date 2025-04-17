@@ -1,43 +1,29 @@
-name: Simple-SSH-Deploy
+name: Simple‑SSH‑Deploy
 
 on:
   push:
-    branches: [main]
+    branches: ["main"]
   workflow_dispatch:
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
       - name: Deploy over SSH
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host:     ${{ secrets.SSH_HOST }}
+          host: ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key:      ${{ secrets.SSH_KEY }}
-          port:     ${{ secrets.SSH_PORT || 22 }}
+          key: ${{ secrets.SSH_KEY }}
           script: |
             set -e
             cd /opt/mail
+            
 
-            # раз и навсегда: каталог безопасный
-            git config --global --add safe.directory /opt/mail
-
-            # ставим SSH‑remote вместо https://github.com/…
-            git remote set-url origin git@github.com:DenisGradov/Mail.git
-
-            # тянем свежий код
-            git fetch --all
-            git reset --hard origin/main
-            git clean -fd
-
-            # перезапускаем контейнеры
             docker-compose down --remove-orphans
-            docker-compose up -d --build --no-cache
+            docker-compose up -d --build
 
-            # чистим dangling‑образы
+            # Убираем мусор
             docker image prune -f
