@@ -1,5 +1,4 @@
-// src/Components/MainWindow.jsx
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import Logo from "./Ui/Logo.jsx";
 import SmallLogo from "./Ui/SmallLogo.jsx";
 import Line from "./Ui/Line.jsx";
@@ -31,7 +30,6 @@ import {
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
 import {getDate, getShortText, stripHtml} from "../Utils/Main.js";
-import {fetchEmails} from "../Api/Mail.js";
 
 export default function MainWindow() {
 
@@ -46,10 +44,8 @@ export default function MainWindow() {
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
 
-  const {
-    mails,
-    init: initMails,
-  } = useMailStore();
+
+  const {mails, init } = useMailStore();
 
   const mailsPerPage = 50;
   const [currentPage, setCurrentPage] = useState(1);
@@ -62,19 +58,14 @@ export default function MainWindow() {
   };
 
   useEffect(() => {
-    fetchEmails(mailsPerPage, null).then(({ items, nextCursor, hasMore }) => {
-      useMailStore.setState({ mails: items, cursor: nextCursor, hasMore });
-    });
+    init(mailsPerPage);
 
     const iv = setInterval(() => {
-      fetchEmails(mailsPerPage, null).then(({ items, nextCursor, hasMore }) => {
-        useMailStore.setState({ mails: items, cursor: nextCursor, hasMore });
-      });
+      init(mailsPerPage);
     }, 15000);
 
     return () => clearInterval(iv);
-  }, []);
-
+  }, [init]);
 
   // Handle window resize
   useEffect(() => {
