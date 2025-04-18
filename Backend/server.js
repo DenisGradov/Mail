@@ -35,7 +35,6 @@ app.use('/api/mail', mailRoutes);
 
 // Создание БД и таблицы
 initializeDB();
-initializeEmailsTable()
 
 
 require('./services/smtp');
