@@ -8,7 +8,7 @@ const db = require('../db');
 function getUserByEmail(email) {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, emails FROM users WHERE email = ?`,
+      `SELECT id, emails FROM users WHERE email = ? COLLATE NOCASE`,
       [email],
       (err, row) => {
         if (err) return reject(err);
