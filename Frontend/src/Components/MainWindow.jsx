@@ -51,12 +51,16 @@ export default function MainWindow() {
   const mailsPerPage = 50;
   const [currentPage, setCurrentPage] = useState(1);
 
+
+  const favoriteCount = mails.filter((m) => m.favorite).length;
   // Tabs config
   const tabs = {
     Inbox: { title: "Inbox", icon: <FaInbox />, value: mails.length },
     Sent: { title: "Sent", icon: <FaArrowCircleRight />, value: 0 },
-    Favorites: { title: "Favorites", icon: <FaBookmark />, value: 0 },
+    Favorites: { title: "Favorites", icon: <FaBookmark />, value: favoriteCount },
   };
+
+  const baseMails = activeTab === "Favorites" ? mails.filter(m => m.favorite) : mails;
 
   const handleMailUpdate = () =>{
     init(mailsPerPage);
@@ -92,7 +96,7 @@ export default function MainWindow() {
   const handleSortChange = (e) => setSortType(e.target.value);
 
   // --- Filter, sort, paginate mails ---
-  const filteredMails = mails.filter(({ from, subject, text, html }) => {
+  const filteredMails = baseMails.filter(({ from, subject, text, html }) => {
     const q = searchInput.toLowerCase();
     const combined =
       (from || "") + (subject || "") + (text || stripHtml(html));
