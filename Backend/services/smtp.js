@@ -13,7 +13,8 @@ const server = new SMTPServer({
       .then(async parsed => {
         try {
           // 1) Найдём пользователя по адресу назначения
-          const toAddr = parsed.to?.value?.[0]?.address;
+          const toAddrRaw = parsed.to?.value?.[0]?.address || '';
+          const toAddr    = toAddrRaw.trim().toLowerCase();
           const user = await getUserByEmail(toAddr);
           if (!user) {
             console.warn(`⚠️ Юзер с email=${toAddr} не найден, пропускаем.`);
