@@ -12,12 +12,12 @@ services:
       - ./Backend/DataBase:/app/DataBase
     restart: unless-stopped
 
-  nginx:                     # контейнер с фронтом
+  nginx:                        # или как вы привыкли называть свой фронт‑сервис
     build:
-      context: .             # весь репозиторий
-      dockerfile: ./nginx/Dockerfile
-    env_file:                # (как у бэка) прокидываем .env внутрь рантайма
-      - .env.frontend
+      context: ./Frontend       # контекст — папка с вашим фронтендом и его Dockerfile
+      dockerfile: Dockerfile
+    env_file:
+      - .env.frontend           # подтягиваем переменные для Vite
     ports:
       - "5042:80"
     depends_on:
