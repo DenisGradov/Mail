@@ -1,92 +1,137 @@
+import { useEffect, useState, useRef } from "react";
 import Logo from "./Ui/Logo.jsx";
+import SmallLogo from "./Ui/SmallLogo.jsx";
+import Line from "./Ui/Line.jsx";
+import Button from "./Ui/Button.jsx";
+import InputSearch from "./Ui/InputSearch.jsx";
+import SelectSort from "./Ui/SelectSort.jsx";
+import ThemeChanger from "./ThemeChanger.jsx";
+import EmptyAvatar from "./Ui/EmptyAvatar.jsx";
+import Clarification from "./Ui/Clarification.jsx";
+
 import {
   FaBars,
   FaInbox,
   FaArrowCircleRight,
   FaBookmark,
+  FaRegBookmark,
   FaSignOutAlt,
   FaRegPaperPlane,
   FaBell,
   FaCog,
-  FaRegSquare, FaCheckSquare, FaSync, FaEllipsisV, FaArrowLeft, FaArrowRight, FaRegBookmark
-} from 'react-icons/fa';
-import Line from "./Ui/Line.jsx";
-import Button from "./Ui/Button.jsx";
-import {useEffect, useState} from "react";
-import ThemeChanger from "./ThemeChanger.jsx";
-import EmptyAvatar from "./Ui/EmptyAvatar.jsx";
-import Clarification from "./Ui/Clarification.jsx";
-import {useUserStore} from "../Store/Index.js";
-import SmallLogo from "./Ui/SmallLogo.jsx";
-import InputSearch from "./Ui/InputSearch.jsx";
-import exampleMails from "../Data/exampleMails.js";
-import {getDate, getShortText} from "../Utils/Main.js";
-import SelectSort from "./Ui/SelectSort.jsx";
+  FaRegSquare,
+  FaCheckSquare,
+  FaSync,
+  FaEllipsisV,
+  FaArrowLeft,
+  FaArrowRight,
+} from "react-icons/fa";
 
-function MainWindow() {
+import { getDate, getShortText } from "../Utils/Main.js";
+import { useUserStore } from "../Store/Index.js";
+import { useMailStore } from "../Store/Mail.js";
 
-  const [activeTab, setActiveTab] = useState("Inbox");
-  const [isMenuOpen, setIsMenuOpen] = useState(window.innerWidth >= 840);
+export default function MainWindow() {
+  // --- Auth & User ---
+  const { logoutUser, user } = useUserStore();
+
+  // --- UI state ---
   const [wantLogout, setWantLogout] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 840);
+  const [isMenuOpen, setIsMenuOpen] = useState(window.innerWidth >= 840);
+  const [activeTab, setActiveTab] = useState("Inbox");
   const [selectedMails, setSelectedMails] = useState([]);
-
-  const handleSelectMails = (type, id) => {
-    if (type === "all") {
-      if (selectedMails.length === exampleMails.length) {
-        setSelectedMails([]);
-      } else {
-        setSelectedMails(exampleMails.map(mail => mail.id));
-      }
-    } else {
-      setSelectedMails(prev => {
-        const isSelected = prev.includes(id);
-        return isSelected ? prev.filter(mailId => mailId !== id) : [...prev, id];
-      });
-    }
-  };
-
-
-  const {logoutUser, user} = useUserStore();
-
-  const tabs = {
-    Inbox: {title: "Inbox", icon: <FaInbox/>, value: 10},
-    Sent: {title: "Sent", icon: <FaArrowCircleRight/>, value: 10},
-    Favorites: {title: "Favorites", icon: <FaBookmark/>, value: 10},
-  };
-
-  const handleNewMessage = () => {
-  };
-  const handleTabOpen = (tabKey) => setActiveTab(tabKey);
-  const handleWantLogout = () => setWantLogout((prev) => !prev);
-  const handleMenuOpen = () => setIsMenuOpen((prev) => !prev);
-
-  useEffect(() => {
-    const onResize = () => setIsDesktop(window.innerWidth >= 840);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
   const [searchInput, setSearchInput] = useState("");
-  const handleSearchInputUpdate = (e) => {
-    const {type, value: val, checked} = e.target;
-    setSearchInput(type === 'checkbox' ? checked : val);
-  };
+  const [sortType, setSortType] = useState("newest");
+  const loaderRef = useRef();
 
-  const desktopOpen = "left-[260px] w-[calc(100%-260px)]";
-  const desktopClosed = "left-[72px] w-[calc(100%-72px)]";
-  const mobileOpen = "left-0 w-full";
-  const mobileClosed = "left-[72px] w-[calc(100%-72px)]";
-
-  const contentPosition = isDesktop
-    ? (isMenuOpen ? desktopOpen : desktopClosed)
-    : (isMenuOpen ? mobileOpen : mobileClosed);
-
+  // --- Mail store ---
+  const {
+    mails,
+    hasMore,
+    loading,
+    init: initMails,
+    loadMore,
+    disconnect,
+  } = useMailStore();
 
   const mailsPerPage = 50;
   const [currentPage, setCurrentPage] = useState(1);
 
-  const filteredMails = exampleMails.filter(({from, subject, content}) => {
+  // Tabs config
+  const tabs = {
+    Inbox: { title: "Inbox", icon: <FaInbox /> },
+    Sent: { title: "Sent", icon: <FaArrowCircleRight /> },
+    Favorites: { title: "Favorites", icon: <FaBookmark /> },
+  };
+
+  // --- Effects ---
+  // 1) Initialize mails + SSE
+  useEffect(() => {
+    initMails(mailsPerPage);
+    return () => disconnect();
+  }, [initMails, disconnect]);
+
+  // 2) Handle window resize
+  useEffect(() => {
+    const onResize = () => {
+      const desk = window.innerWidth >= 840;
+      setIsDesktop(desk);
+      setIsMenuOpen(desk);
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  // 3) Infinite scroll for older mails
+  useEffect(() => {
+    if (!loaderRef.current) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          loadMore(mailsPerPage);
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    obs.observe(loaderRef.current);
+    return () => obs.disconnect();
+  }, [loadMore]);
+
+  // --- Handlers ---
+  const handleMenuToggle = () => setIsMenuOpen((v) => !v);
+  const handleLogoutConfirm = () => setWantLogout((v) => !v);
+  const handleTabClick = (tab) => setActiveTab(tab);
+
+  const handleSearchChange = (e) => {
+    setSearchInput(e.target.value);
+  };
+
+  const handleSortChange = (e) => {
+    setSortType(e.target.value);
+  };
+
+  const handleSelect = (type, id) => {
+    if (type === "all") {
+      if (selectedMails.length === displayedMails.length) {
+        setSelectedMails([]);
+      } else {
+        setSelectedMails(displayedMails.map((m) => m.id));
+      }
+    } else {
+      setSelectedMails((prev) =>
+        prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+      );
+    }
+  };
+
+  const handlePrevPage = () =>
+    setCurrentPage((p) => Math.max(p - 1, 1));
+  const handleNextPage = () =>
+    setCurrentPage((p) => Math.min(p + 1, totalPages));
+
+  // --- Filter, sort, paginate mails ---
+  const filteredMails = mails.filter(({ from, subject, content }) => {
     const q = searchInput.toLowerCase();
     return (
       from.toLowerCase().includes(q) ||
@@ -95,22 +140,7 @@ function MainWindow() {
     );
   });
 
-
-  const rangeStart = (currentPage - 1) * mailsPerPage + 1;
-  const rangeEnd = Math.min(currentPage * mailsPerPage, filteredMails.length);
-
-  useEffect(() => {
-    setCurrentPage(1);
-    setSelectedMails([]);
-  }, [searchInput, exampleMails]);
-
-
-  const [sortType, setSortType] = useState("newest");
-
-  const handleSortChange = (e) => {
-    setSortType(e.target.value);
-  };
-  const sortedMails = filteredMails.sort((a, b) => {
+  const sortedMails = [...filteredMails].sort((a, b) => {
     switch (sortType) {
       case "newest":
         return new Date(b.date) - new Date(a.date);
@@ -125,246 +155,247 @@ function MainWindow() {
     }
   });
 
-  const totalPages = Math.max(Math.ceil(sortedMails.length / mailsPerPage), 1);
+  const totalPages = Math.max(
+    Math.ceil(sortedMails.length / mailsPerPage),
+    1
+  );
+
+  // reset page & selection when search or new mails
+  useEffect(() => {
+    setCurrentPage(1);
+    setSelectedMails([]);
+  }, [searchInput, mails.length]);
+
   const displayedMails = sortedMails.slice(
     (currentPage - 1) * mailsPerPage,
     currentPage * mailsPerPage
   );
 
-  const handlePrevPage = () =>
-    setCurrentPage((p) => Math.max(p - 1, 1));
-  const handleNextPage = () =>
-    setCurrentPage((p) => Math.min(p + 1, totalPages));
-
+  // --- Layout classes ---
+  const desktopOpen = "left-[260px] w-[calc(100%-260px)]";
+  const desktopClosed = "left-[72px] w-[calc(100%-72px)]";
+  const mobileOpen = "left-0 w-full";
+  const mobileClosed = "left-[72px] w-[calc(100%-72px)]";
+  const contentPosition = isDesktop
+    ? isMenuOpen
+      ? desktopOpen
+      : desktopClosed
+    : isMenuOpen
+      ? mobileOpen
+      : mobileClosed;
 
   return (
     <div className="flex w-full h-full">
+      {/* Sidebar */}
       <div
-        className={`${isMenuOpen ? "w-[260px] py-[20px] px-[12px] items-center" : "w-[72px]"} h-full bg-container flex flex-col z-20 border-r border-stroke`}>
-        <div className="flex flex-col items-center h-full">
-          <div className={`${!isMenuOpen && "flex-col-reverse px-[10px]"} flex items-center w-full`}>
-            <FaBars onClick={handleMenuOpen} className="text-[24px] text-icons hover-anim"/>
-            <div className="scale-75">
-              {isMenuOpen ? <Logo/> :
-                <SmallLogo className={`${!isMenuOpen && "my-[20px]"} scale-125 duration-0 select-none`}/>}
-            </div>
+        className={`${
+          isMenuOpen ? "w-[260px] py-[20px] px-[12px]" : "w-[72px]"
+        } h-full bg-container flex flex-col border-r border-stroke`}
+      >
+        <div className="flex flex-col items-center flex-grow">
+          <div className="flex items-center w-full justify-between px-2">
+            <FaBars
+              onClick={handleMenuToggle}
+              className="text-[24px] text-icons cursor-pointer"
+            />
+            {isMenuOpen ? <Logo /> : <SmallLogo />}
           </div>
-          <Line className="my-[24px]"/>
-          <Button onClick={handleNewMessage} className={`${!isMenuOpen && "w-[50px]"}  font-bold`}>
-            {isMenuOpen ? "New Message" : <FaRegPaperPlane className="text-[25px]"/>}
+
+          <Line className="my-6 w-full" />
+
+          <Button
+            className={`font-bold ${
+              !isMenuOpen ? "w-[50px] justify-center" : ""
+            }`}
+            onClick={() => {}}
+          >
+            {isMenuOpen ? "New Message" : <FaRegPaperPlane />}
           </Button>
-          <Line className="mt-[24px] mb-[26.5px]"/>
-          {Object.keys(tabs).map((tab, i) => (
+
+          <Line className="my-6 w-full" />
+
+          {Object.keys(tabs).map((tab) => (
             <div
-              onClick={() => handleTabOpen(tab)}
-              className={`${isMenuOpen ? "p-[12px] w-full rounded-[10px]" : "p-[10px] px-[14px] rounded-[10px]"} ${activeTab === tab ? "bg-bg-active" : ""} hover-anim my-[2.5px] hover:bg-bg-hover opacity-50 flex justify-between items-center`}
-              key={`Tab #${i}`}>
+              key={tab}
+              onClick={() => handleTabClick(tab)}
+              className={`flex justify-between items-center my-1 w-full p-3 rounded-lg cursor-pointer hover:bg-bg-hover ${
+                activeTab === tab ? "bg-bg-active font-bold" : "opacity-60"
+              }`}
+            >
               <div className="flex items-center">
-                <div
-                  className={`${isMenuOpen ? "mr-[10px]" : "text-[25px] ml-[-3px]"} ${activeTab === tab ? "font-bold" : "text-icons"} w-[20px]`}>{tabs[tab].icon}</div>
-                <div
-                  className={`${!isMenuOpen && "hidden"} ${activeTab === tab ? "font-bold" : ""}`}>{tabs[tab].title}</div>
+                <div className="mr-2">{tabs[tab].icon}</div>
+                {isMenuOpen && <span>{tabs[tab].title}</span>}
               </div>
-              <div className={`${!isMenuOpen && "hidden"} ${activeTab === tab ? "font-bold" : "text-icons"}`}>
-                {tabs[tab].value}
-              </div>
+              {isMenuOpen && <span>{filteredMails.length}</span>}
             </div>
           ))}
         </div>
-        <div className="flex flex-col w-full">
-          <ThemeChanger className={`${!isMenuOpen && "rotate-90"}`}/>
-          <Line className={`${!isMenuOpen && "mt-[40px]"} my-[20px]`}/>
-          <div className={`${!isMenuOpen && "flex-col"} flex justify-between items-center`}>
+
+        <div className="w-full p-4">
+          <ThemeChanger className="mb-4" />
+          <div className="flex items-center justify-between">
             <div className="flex items-center">
-              <EmptyAvatar className={isMenuOpen && "mr-[10px]"} name={user.name}/>
-              <div className={!isMenuOpen && "hidden"}>{user.name || "Albert"}</div>
+              <EmptyAvatar name={user.name} />
+              {isMenuOpen && <span className="ml-2">{user.name}</span>}
             </div>
-            <div onClick={handleWantLogout} className={`${!isMenuOpen && "my-[20px]"} p-[8px] hover-anim`}>
-              <FaSignOutAlt className="text-[18px]"/>
-            </div>
+            <FaSignOutAlt
+              onClick={handleLogoutConfirm}
+              className="text-[18px] cursor-pointer"
+            />
           </div>
         </div>
       </div>
 
-      <div className={`absolute top-0 ${contentPosition} h-full bg-main flex flex-col z-10 overflow-hidden`}>
-        <div className="absolute flex 840px:justify-center justify-end items-center w-full py-[20px] px-[16px]">
+      {/* Main content */}
+      <div
+        className={`absolute top-0 ${contentPosition} h-full bg-main flex flex-col z-10 overflow-hidden`}
+      >
+        {/* Top bar */}
+        <div className="absolute top-0 w-full flex items-center justify-between p-4">
           <InputSearch
             value={searchInput}
-            onChange={handleSearchInputUpdate}
-            className="max-w-[400px] 840px:w-full"
+            onChange={handleSearchChange}
+            className="max-w-[400px] w-full"
           />
-          <div
-            className="840px:absolute 840px:right-[16px] flex items-center 450px:gap-[14px] gap-[5px] ml-[5px] 450px:ml-[30px]">
-            <FaBell className="text-[22px] hover-anim text-icons"/>
-            <FaCog className="text-[22px] hover-anim hidden 375px:block text-icons"/>
-            <EmptyAvatar className="w-[40px] h-[40px]  justify-center items-center hover-anim hidden 450px:flex"
-                         name={user.name}/>
+          <div className="flex items-center space-x-4">
+            <FaBell className="text-[22px] cursor-pointer" />
+            <FaCog className="text-[22px] hidden md:block cursor-pointer" />
+            <EmptyAvatar name={user.name} className="hidden md:block" />
           </div>
         </div>
-        <Line className="mt-[91px]"/>
-        <div className="470px:flex-row flex-col 375px:mx-[20px] my-[10px] flex justify-between 470px:items-center">
-          <div className="flex items-center">
-            <div>
-              {selectedMails.length === exampleMails.length ?
-                <div onClick={() => handleSelectMails("all")} className="hover-anim">
-                  <FaCheckSquare className="text-icons text-[19px] m-[8px]"/>
-                </div> :
-                <div onClick={() => handleSelectMails("all")} className="hover-anim">
-                  <FaRegSquare className="text-icons text-[19px] m-[8px]"/>
-                </div>
-              }
 
-            </div>
+        <Line className="mt-[72px]" />
 
-            <div className=" hover-anim">
-              <FaEllipsisV className="text-icons text-[19px]"/></div>
-            <div className=" hover-anim">
-              <FaSync className="text-icons text-[19px] m-[8px]"/></div>
-
+        {/* Controls: select, refresh, sort, pagination */}
+        <div className="flex items-center justify-between p-4">
+          <div className="flex items-center space-x-4">
+            {selectedMails.length === displayedMails.length ? (
+              <FaCheckSquare
+                className="text-icons cursor-pointer"
+                onClick={() => handleSelect("all")}
+              />
+            ) : (
+              <FaRegSquare
+                className="text-icons cursor-pointer"
+                onClick={() => handleSelect("all")}
+              />
+            )}
+            <FaEllipsisV className="text-icons cursor-pointer" />
+            <FaSync className="text-icons cursor-pointer" onClick={() => loadMore(0)} />
           </div>
-          <div className="flex items-center justify-between 470px:justify-center">
-            <SelectSort value={sortType} onChange={handleSortChange}/>
-            <div className="flex items-center">
-              <div
-                onClick={handlePrevPage}
-                className={`hover-anim ${currentPage === 1 && "opacity-40 pointer-events-none"}`}
-              >
-                <FaArrowLeft className="text-icons text-[19px] m-[8px]"/>
-              </div>
-              <span className="text-text-secondary text-[15px]">
-    {`${rangeStart}-${rangeEnd} из ${filteredMails.length}`}
-  </span>
-              <div
-                onClick={handleNextPage}
-                className={`hover-anim ${currentPage === totalPages && "opacity-40 pointer-events-none"}`}
-              >
-                <FaArrowRight className="text-icons text-[19px] m-[8px]"/>
-              </div>
-            </div>
+          <div className="flex items-center space-x-4">
+            <SelectSort value={sortType} onChange={handleSortChange} />
+            <FaArrowLeft
+              onClick={handlePrevPage}
+              className={`text-icons cursor-pointer ${
+                currentPage === 1 ? "opacity-40 pointer-events-none" : ""
+              }`}
+            />
+            <span className="text-text-secondary">
+              {`${(currentPage - 1) * mailsPerPage + 1}-${
+                Math.min(currentPage * mailsPerPage, sortedMails.length)
+              } из ${sortedMails.length}`}
+            </span>
+            <FaArrowRight
+              onClick={handleNextPage}
+              className={`text-icons cursor-pointer ${
+                currentPage === totalPages ? "opacity-40 pointer-events-none" : ""
+              }`}
+            />
           </div>
         </div>
-        <Line className=""/>
-        <div className="mx-auto w-full px-[5px] overflow-y-auto overflow-x-hidden m-[10px]">
 
-          {displayedMails.map((mail, mailIndex) => (
-            <div className="w-full mx-[10px] px-[10px] pr-[25px]" key={`Mail #${mailIndex}`}>
-              <Line type="Long" className={`${mailIndex === 0 && "hidden"} ml-[-30px] my-[10px]`}/>
-              {isDesktop ? (
-                <div className="flex items-center">
-                  <div className="flex items-center flex-[25%]">
-                    {selectedMails.includes(mail.id) ? (
-                      <div onClick={() => handleSelectMails("id", mail.id)}>
-                        <FaCheckSquare className="text-icons text-[19px] hover-anim"/>
-                      </div>
-                    ) : (
-                      <div onClick={() => handleSelectMails("id", mail.id)}>
-                        <FaRegSquare className="text-icons text-[19px] hover-anim"/>
-                      </div>
-                    )}
-                    <div className="ml-[10px]">
-                      {mail.favorite ? (
-                        <div className="p-[2px] hover-anim">
-                          <FaBookmark className="text-yellow-400"/>
-                        </div>
-                      ) : (
-                        <div className="p-[2px] hover-anim">
-                          <FaRegBookmark className="text-icons"/>
-                        </div>
-                      )}
-                    </div>
-                    <div
-                      className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} text-[17px] ml-[10px]`}>
-                      {getShortText(mail.from || "none", 20, false)}
-                    </div>
+        <Line />
+
+        {/* Mail list */}
+        <div className="overflow-y-auto flex-1 p-4">
+          {displayedMails.map((mail, idx) => (
+            <div key={mail.id}>
+              {idx > 0 && <Line type="Long" className="my-4" />}
+              <div className="flex items-center py-2">
+                {/* selection */}
+                {selectedMails.includes(mail.id) ? (
+                  <FaCheckSquare
+                    className="text-icons cursor-pointer mr-2"
+                    onClick={() => handleSelect("id", mail.id)}
+                  />
+                ) : (
+                  <FaRegSquare
+                    className="text-icons cursor-pointer mr-2"
+                    onClick={() => handleSelect("id", mail.id)}
+                  />
+                )}
+                {/* favorite */}
+                {mail.favorite ? (
+                  <FaBookmark className="text-yellow-400 mr-2" />
+                ) : (
+                  <FaRegBookmark className="text-icons mr-2 cursor-pointer" />
+                )}
+                {/* from/subject/content */}
+                <div className="flex-1">
+                  <div className="flex items-center">
+                    {!mail.viewed && <div className="w-2 h-2 rounded-full bg-primary mr-2" />}
+                    <span
+                      className={`${
+                        mail.viewed ? "text-icons font-medium" : "text-text-primary font-bold"
+                      }`}
+                    >
+                      {getShortText(mail.from, 20, false)}
+                    </span>
                   </div>
-
-                  <div className="flex items-center flex-[60%]">
-                    <div
-                      className={`${mail.viewed ? "opacity-0" : "opacity-100"} w-[8px] h-[8px] rounded-full bg-primary`}/>
-                    <div
-                      className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} mx-[10px] text-[17px]`}>
-                      {getShortText(mail.subject || "Without subject", 30, false)}
-                    </div>
-                    <div
-                      className={`${mail.viewed ? "font-medium text-text-secondary" : "font-bold text-text-secondary-60"} text-[17px]`}>
-                      {getShortText(mail.content + mail.content || "No text", 80, true)}
-                    </div>
+                  <div className="ml-6">
+                    <span
+                      className={`${
+                        mail.viewed ? "text-icons font-medium" : "text-text-primary font-bold"
+                      }`}
+                    >
+                      {getShortText(mail.subject || "Без темы", 30, false)}
+                    </span>
                   </div>
-
-                  <div className="flex-[0.5%] text-center">{getDate(mail.date)}</div>
-                </div>
-              ) : (
-                <div className="flex flex-col">
-                  <div className="flex flex-col flex-1">
-                    <div className="flex items-center">
-
-                      <div
-                        className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} text-[17px]`}>
-                        {getShortText(mail.from || "Without subject", 18, false)}
-                      </div>
-                    </div>
-                    <div
-                      className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} text-[17px] mt-[4px]`}>
-                      {getShortText(mail.subject || "Without subject", 20, false)}
-                    </div>
-                    <div
-                      className={`${mail.viewed ? "font-medium text-text-secondary" : "font-bold text-text-secondary-60"} text-[17px] mt-[4px]`}>
-                      {getShortText(mail.content || "No text", 20, true)}
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between w-full bg">
-                    <div className="flex items-center">
-                      {selectedMails.includes(mail.id) ? (
-                        <div onClick={() => handleSelectMails("id", mail.id)}>
-                          <FaCheckSquare className="text-icons text-[19px] hover-anim"/>
-                        </div>
-                      ) : (
-                        <div onClick={() => handleSelectMails("id", mail.id)}>
-                          <FaRegSquare className="text-icons text-[19px] hover-anim"/>
-                        </div>
-                      )}
-                      <div className="justify-items-end">
-                        {mail.favorite ? (
-                          <div className="p-[2px] hover-anim">
-                            <FaBookmark className="text-yellow-400"/>
-                          </div>
-                        ) : (
-                          <div className="p-[2px] hover-anim">
-                            <FaRegBookmark className="text-icons"/>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-
-                    <div className="flex items-center">
-                      <div
-                        className={`${mail.viewed ? "opacity-0" : "opacity-100"} w-[8px] h-[8px] rounded-full bg-primary`}/>
-                      <div className="ml-[10px]">{getDate(mail.date)}</div>
-                    </div>
+                  <div className="ml-6">
+                    <span
+                      className={`${
+                        mail.viewed
+                          ? "text-text-secondary font-medium"
+                          : "text-text-secondary-60 font-bold"
+                      }`}
+                    >
+                      {getShortText(mail.content, 80, true)}
+                    </span>
                   </div>
                 </div>
-              )}
+                {/* date */}
+                <div className="w-[80px] text-right text-sm text-icons">
+                  {getDate(mail.date)}
+                </div>
+              </div>
             </div>
           ))}
 
-
+          {/* sentinel for infinite scroll */}
+          {hasMore && !loading && (
+            <div ref={loaderRef} className="text-center py-4">
+              Загрузка старых…
+            </div>
+          )}
+          {loading && (
+            <div className="text-center py-4">Загрузка…</div>
+          )}
         </div>
       </div>
 
+      {/* Logout confirmation */}
       {wantLogout && (
-        <div className="absolute w-full h-full top-0 left-0 bg-bg-main z-40">
+        <div className="absolute inset-0 bg-bg-main z-40 flex items-center justify-center">
           <Clarification
             title="Logout"
             text="Are you sure you want to log out of your account?"
             buttonText="Exit"
             onClick={logoutUser}
-            backButtonClick={handleWantLogout}
+            backButtonClick={handleLogoutConfirm}
           />
         </div>
       )}
     </div>
   );
 }
-
-export default MainWindow;
