@@ -30,25 +30,13 @@ import {
 
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
-import {getShortText, stripHtml} from "../Utils/Main.js";
+import {getDate, getShortText, stripHtml} from "../Utils/Main.js";
 
 export default function MainWindow() {
-  // Full date formatter
-  function formatDateFull(dateStr) {
-    return new Date(dateStr).toLocaleString("en-US", {
-      month: "long",
-      day: "numeric",
-      year: "numeric",
-      hour: "2-digit",
-      minute: "2-digit",
-      hour12: false,
-    });
-  }
 
-  // --- Auth & User ---
+
   const { logoutUser, user } = useUserStore();
 
-  // --- UI state ---
   const [wantLogout, setWantLogout] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 840);
   const [isMenuOpen, setIsMenuOpen] = useState(window.innerWidth >= 840);
@@ -57,7 +45,6 @@ export default function MainWindow() {
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
 
-  // --- Mail store ---
   const {
     mails,
     init: initMails,
@@ -289,7 +276,7 @@ export default function MainWindow() {
                       {mail.favorite ? <FaBookmark className="text-yellow-400" /> : <FaRegBookmark />}
                     </div>
                     <div className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} text-[17px] ml-[10px]`}>
-                      {getShortText(mail.from || "none", 20, false)}
+                      {getShortText(mail.from || "none", 30, false)}
                     </div>
                   </div>
                   <div className="flex items-center flex-[60%]">
@@ -305,7 +292,7 @@ export default function MainWindow() {
                       )}
                     </div>
                   </div>
-                  <div className="flex-[0.5%] text-center">{formatDateFull(mail.date)}</div>
+                  <div className="flex-[0.5%] text-center">{getDate(mail.date)}</div>
                 </div>
               ) : (
                 <div className="flex flex-col">
@@ -339,7 +326,7 @@ export default function MainWindow() {
                     </div>
                     <div className="flex items-center">
                       <div className={`${mail.viewed ? "opacity-0" : "opacity-100"} w-[8px] h-[8px] rounded-full bg-primary`} />
-                      <div className="ml-[10px]">{formatDateFull(mail.date)}</div>
+                      <div className="ml-[10px]">{getDate(mail.date)}</div>
                     </div>
                   </div>
                 </div>
