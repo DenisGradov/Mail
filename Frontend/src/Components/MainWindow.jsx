@@ -57,15 +57,20 @@ export default function MainWindow() {
     Favorites: { title: "Favorites", icon: <FaBookmark />, value: 0 },
   };
 
-  useEffect(() => {
+  const handleMailUpdate = () =>{
     init(mailsPerPage);
+  }
+
+  useEffect(() => {
+    handleMailUpdate()
 
     const iv = setInterval(() => {
-      init(mailsPerPage);
+      handleMailUpdate()
     }, 15000);
 
     return () => clearInterval(iv);
   }, [init]);
+
 
   // Handle window resize
   useEffect(() => {
@@ -237,7 +242,7 @@ export default function MainWindow() {
               <FaEllipsisV className="text-icons text-[19px]" />
             </div>
             <div className="hover-anim cursor-pointer">
-              <FaSync className="text-icons text-[19px] m-[8px]" />
+              <FaSync onClick={handleMailUpdate} className="text-icons text-[19px] m-[8px]" />
             </div>
           </div>
           <div className="flex items-center justify-between 470px:justify-center">
