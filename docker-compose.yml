@@ -5,7 +5,7 @@ services:
     build: ./Backend
     ports:
       - "5050:5050"
-      - "2525:25"
+      - "25:25"
     env_file: .env.backend
     volumes:
       - ./Backend/DataBase:/app/DataBase
