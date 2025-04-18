@@ -12,10 +12,12 @@ services:
       - ./Backend/DataBase:/app/DataBase
     restart: unless-stopped
 
-  nginx:
+  nginx:                     # контейнер с фронтом
     build:
-      context: .
+      context: .             # весь репозиторий
       dockerfile: ./nginx/Dockerfile
+    env_file:                # (как у бэка) прокидываем .env внутрь рантайма
+      - .env.frontend
     ports:
       - "5042:80"
     depends_on:

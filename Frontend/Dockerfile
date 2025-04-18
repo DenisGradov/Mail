@@ -1,24 +1,23 @@
-# Stage 1: билд фронтенда
+# Stage 1: build Vite + React
 FROM node:20-alpine AS build
 
-# Переходим сразу в папку с фронтом
 WORKDIR /app/Frontend
 
-# Копируем package.json и ставим зависимости
+# 1) зависимости
 COPY Frontend/package*.json ./
 RUN npm ci
 
-# Копируем .env.frontend в /app/Frontend/.env до копирования остального кода
-# чтобы Vite подхватил переменные
+# 2) кладём .env.frontend внутрь фронта (становится .env)
+#    => Vite увидит все VITE_* переменные
 COPY .env.frontend .env
 
-# Теперь копируем весь исходник
+# 3) копируем исходники
 COPY Frontend .
 
-# Собираем
+# 4) билд
 RUN npm run build
 
-# Stage 2: nginx отдаёт готовую статику
+# --------------- Stage 2: Nginx ---------------
 FROM nginx:1.27-alpine
 
 COPY nginx.conf /etc/nginx/nginx.conf

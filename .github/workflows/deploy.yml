@@ -44,6 +44,11 @@ jobs:
           script: |
             set -e
             cd /opt/mail
+      
+            set -a
+            [ -f .env.frontend ] && source .env.frontend
+            [ -f .env.backend ]  && source .env.backend
+            set +a
 
             docker-compose down --remove-orphans
             docker-compose up -d --build

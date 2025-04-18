@@ -1,26 +1,28 @@
-# ----------- STAGE 1: build React -----------
-FROM node:20-alpine AS builder
-WORKDIR /app
+# StageВ 1: build ViteВ + React
+FROM node:20-alpine AS build
 
-# Копируем package.json + lock
+WORKDIR /app/Frontend
+
+# 1) Р·Р°РІРёСЃРёРјРѕСЃС‚Рё
 COPY Frontend/package*.json ./
 RUN npm ci
 
-# Копируем весь фронтенд-код и билдим
+# 2) РєР»Р°РґС‘Рј .env.frontend РІРЅСѓС‚СЂСЊ С„СЂРѕРЅС‚Р° (СЃС‚Р°РЅРѕРІРёС‚СЃСЏ .env)
+#    => Vite СѓРІРёРґРёС‚ РІСЃРµ VITE_* РїРµСЂРµРјРµРЅРЅС‹Рµ
+COPY .env.frontend .env
+
+# 3) РєРѕРїРёСЂСѓРµРј РёСЃС…РѕРґРЅРёРєРё
 COPY Frontend .
-ARG VITE_BACKEND_URL=/api
-ENV VITE_BACKEND_URL=$VITE_BACKEND_URL
-RUN echo "VITE_BACKEND_URL=$VITE_BACKEND_URL" > .env && npm run build
 
-# ----------- STAGE 2: nginx с прокси -----------
+# 4) Р±РёР»Рґ
+RUN npm run build
+
+# --------------- StageВ 2: Nginx ---------------
 FROM nginx:1.27-alpine
-# Ваш прокси-конфиг
-COPY nginx/nginx.conf /etc/nginx/nginx.conf
 
-# Статика из билдера
-COPY --from=builder /app/dist/ /usr/share/nginx/html/
+COPY nginx.conf /etc/nginx/nginx.conf
+RUN rm -rf /usr/share/nginx/html/*
+COPY --from=build /app/Frontend/dist/ /usr/share/nginx/html/
 
-# Порт контейнера
 EXPOSE 80
-
 CMD ["nginx","-g","daemon off;"]
