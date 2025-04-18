@@ -24,7 +24,6 @@ jobs:
           port:     ${{ secrets.SSH_PORT || 22 }}
           source:   "./"            # весь репо
           target:   "/opt/mail"     # путь на сервере
-          rm:       true            # удалить файлы, которых больше нет в репо
           strip_components: 1       # убираем верхнюю папку
           recursive: true
           exclude: |                # не тащим тяжести
