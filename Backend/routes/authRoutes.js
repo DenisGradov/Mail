@@ -6,8 +6,7 @@ const { generateToken } = require('../Utils/main');
 const { hashPassword } = require('../Utils/hashPassword');
 const {loginUser} = require("../DataBase/functions/loginUser");
 const {getUserByToken} = require("../DataBase/functions/getUserByToken");
-const domain = process.env.defaultMail;
-
+const domain = process.env.DEFAULT_MAIL;
 
 router.post('/logout', (req, res) => {
   res.clearCookie('auth_token', {
@@ -110,7 +109,7 @@ router.post('/register', async (req, res) => {
       return res.status(400).json({ errors });
     }
 
-    const email = `${login}@${process.env.defaulMail}`;
+    const email = `${login}@${domain}`;
     const token = generateToken(64);
     const hashedPassword = hashPassword(password);
 
