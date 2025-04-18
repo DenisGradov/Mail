@@ -30,7 +30,6 @@ jobs:
             .git/
             .env
             .env.backend
-            .env.frontend
             *.db
 
       # 3) перезапускаем контейнеры
@@ -42,16 +41,12 @@ jobs:
           key:      ${{ secrets.SSH_KEY }}
           port:     ${{ secrets.SSH_PORT || 22 }}
           script: |
+      
             set -e
             cd /opt/mail
-      
-            set -a
-            [ -f .env.frontend ] && source .env.frontend
-            [ -f .env.backend ]  && source .env.backend
-            set +a
-
+            # загружаем переменные
+            export $(grep -Ev '^\s*(#|$)' .env.backend  | xargs)
+            export $(grep -Ev '^\s*(#|$)' .env.frontend | xargs)
             docker-compose down --remove-orphans
             docker-compose up -d --build
-
-            # чистим dangling‑образы
             docker image prune -f
