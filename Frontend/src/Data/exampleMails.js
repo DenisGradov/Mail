@@ -1486,7 +1486,7 @@ const exampleMails = [
     "subject": "Meeting Reminder",
     "date": "Wed, 12 Mar 2025 04:00:00 +0000",
     "messageId": "<msg80@example.com>",
-    "inReplyTo": "<reply79@example.com>",
+    "inReplyTo": "<reply79@exagmple.com>",
     "references": "<ref79@example.com>",
     "contentType": "text/plain; charset=utf-8",
     "content": "Hope you're having a great day!",

@@ -1,16 +1,26 @@
 const db = require('../db');
 
-function addEmail({ sender, recipient, subject, body }) {
+async function addEmail({
+                          from, to, subject, date,
+                          messageId, inReplyTo, references,
+                          contentType, textContent, htmlContent
+                        }) {
   return new Promise((resolve, reject) => {
-    db.run(
-      `INSERT INTO emails (sender, recipient, subject, body)
-       VALUES (?, ?, ?, ?)`,
-      [sender, recipient, subject, body],
-      function (err) {
-        if (err) return reject(err);
-        resolve(this.lastID);
-      },
-    );
+    const query = `
+      INSERT INTO emails
+        (from_address, to_address, subject, date,
+         message_id, in_reply_to, references,
+         content_type, text_content, html_content)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    db.run(query, [
+      from, to, subject, date,
+      messageId, inReplyTo, references,
+      contentType, textContent, htmlContent
+    ], function(err) {
+      if (err) return reject(err);
+      resolve(this.lastID);
+    });
   });
 }
 
