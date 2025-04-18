@@ -31,7 +31,7 @@ const server = new SMTPServer({
   },
 });
 
-const PORT = 2525
-server.listen(2525, '0.0.0.0', () => {
+const PORT = 25
+server.listen(25, '0.0.0.0', () => {
   console.log('🚀 SMTP Print‑сервер запущен на порту 2525. Готов к приёму писем!');
 });
