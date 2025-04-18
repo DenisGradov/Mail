@@ -1,29 +1,52 @@
-name: Simple‑SSH‑Deploy
+name: Simple-SSH-Deploy
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [main]       # деплой при push в main
+  workflow_dispatch:       # запуск вручную
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
 
-      - name: Deploy over SSH
+    steps:
+      # 1) скачиваем репозиторий в CI
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      # 2) закидываем свежие файлы на сервер (перетираем старые)
+      - name: Sync code to server via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host:     ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key:      ${{ secrets.SSH_KEY }}
+          port:     ${{ secrets.SSH_PORT || 22 }}
+          source:   "./"            # весь репо
+          target:   "/opt/mail"     # путь на сервере
+          rm:       true            # удалить файлы, которых больше нет в репо
+          strip_components: 1       # убираем верхнюю папку
+          recursive: true
+          exclude: |                # не тащим тяжести
+            .git/
+            node_modules/
+            Frontend/node_modules/
+            Backend/node_modules/
+
+      # 3) перезапускаем контейнеры
+      - name: Run docker‑compose on server
         uses: appleboy/ssh-action@v1.2.2
         with:
-          host: ${{ secrets.SSH_HOST }}
+          host:     ${{ secrets.SSH_HOST }}
           username: ${{ secrets.SSH_USER }}
-          key: ${{ secrets.SSH_KEY }}
+          key:      ${{ secrets.SSH_KEY }}
+          port:     ${{ secrets.SSH_PORT || 22 }}
           script: |
             set -e
             cd /opt/mail
-            
 
             docker-compose down --remove-orphans
             docker-compose up -d --build
 
-            # Убираем мусор
+            # чистим dangling‑образы
             docker image prune -f
