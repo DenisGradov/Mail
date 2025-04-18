@@ -44,6 +44,7 @@ export default function MainWindow() {
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
 
+  const toggleFavorite = useMailStore(state => state.toggleFavorite);
 
   const {mails, init } = useMailStore();
 
@@ -280,7 +281,9 @@ export default function MainWindow() {
                       </div>
                     )}
                     <div className="ml-[10px] cursor-pointer">
-                      {mail.favorite ? <FaBookmark className="text-yellow-400" /> : <FaRegBookmark />}
+                      {mail.favorite ? <FaBookmark
+                        onClick={() => toggleFavorite(mail.id, false)} className="text-yellow-400" /> : <FaRegBookmark
+                        onClick={() => toggleFavorite(mail.id, true)}/>}
                     </div>
                     <div className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} text-[17px] ml-[10px]`}>
                       {getShortText(mail.from || "none", 30, false)}
@@ -328,7 +331,9 @@ export default function MainWindow() {
                         </div>
                       )}
                       <div className="ml-2 cursor-pointer">
-                        {mail.favorite ? <FaBookmark className="text-yellow-400" /> : <FaRegBookmark />}
+                        {mail.favorite ? <FaBookmark className="text-yellow-400"
+                                                     onClick={() => toggleFavorite(mail.id, false)}/> : <FaRegBookmark
+                          onClick={() => toggleFavorite(mail.id, true)}/>}
                       </div>
                     </div>
                     <div className="flex items-center">

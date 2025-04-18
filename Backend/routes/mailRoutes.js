@@ -3,6 +3,7 @@ const router  = express.Router();
 
 const { getUserByToken } = require('../DataBase/functions/getUserByToken');
 const { mailEmitter }    = require('../services/mailEmitter');
+const {setEmailFavorite} = require("../DataBase/functions/setEmailFavorite");
 
 /**
  * GET /api/mail
@@ -66,5 +67,29 @@ router.get('/stream', async (req, res) => {
   mailEmitter.on('newEmail', onNew);
   req.on('close', () => mailEmitter.off('newEmail', onNew));
 });
+
+router.patch(
+  '/:id/favorite',
+  async (req, res) => {
+    const token = req.cookies?.auth_token;
+    if (!token) return res.status(401).json({ error: 'No token' });
+    try {
+      const user = await getUserByToken(token);
+      if (!user) return res.status(401).json({ error: 'Invalid token' });
+
+      const mailId   = req.params.id;
+      const favorite = req.body.favorite;
+
+      const updatedMail = await setEmailFavorite(user.id, mailId, favorite);
+      if (!updatedMail) {
+        return res.status(404).json({ error: 'Mail not found' });
+      }
+      res.json(updatedMail);
+    } catch (err) {
+      console.error('favorite error:', err);
+      res.status(500).json({ error: 'Internal error' });
+    }
+  }
+);
 
 module.exports = router;

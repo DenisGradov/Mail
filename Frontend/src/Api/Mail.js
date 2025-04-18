@@ -38,3 +38,13 @@ export const subscribeNewEmails = (onEmail) => {
   };
   return es;
 };
+
+
+export const setFavorite = async (mailId, favorite) => {
+  const res = await axios.patch(
+    `${backendUrl}/mail/${encodeURIComponent(mailId)}/favorite`,
+    { favorite },
+    { withCredentials: true }
+  );
+  return res.data;
+};

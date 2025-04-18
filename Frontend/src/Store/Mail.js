@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { fetchEmails, subscribeNewEmails } from "../Api/Mail.js";
+import {fetchEmails, setFavorite, subscribeNewEmails} from "../Api/Mail.js";
 
 export const useMailStore = create((set, get) => ({
   mails: [],
@@ -67,4 +67,17 @@ export const useMailStore = create((set, get) => ({
     if (es) es.close();
     set({ sse: null });
   },
+  toggleFavorite: async (mailId, favorite) => {
+    try {
+      const updated = await setFavorite(mailId, favorite);
+      set(state => ({
+        mails: state.mails.map(m =>
+          m.id === updated.id ? { ...m, favorite: updated.favorite } : m
+        )
+      }));
+    } catch (err) {
+      console.error('toggleFavorite error:', err);
+    }
+  },
+
 }));
