@@ -7,105 +7,97 @@ import InputLabel from "../Ui/InputLabel.jsx";
 import Input from "../Ui/Input.jsx";
 import PropTypes from "prop-types";
 import Button from "../Ui/Button.jsx";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 function Login({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
   const { loginUser } = useUserStore();
 
-  const defaultFormData = {
-    login: '',
-    password: '',
-    remember: false,
-  };
-
-  const defaultErrorData = {
-    errorLoginMsg: '',
-    errorPasswordMsg: '',
-  };
-
-  const errorKeys = Object.keys(defaultFormData).reduce((acc, key, index) => {
-    acc[key] = Object.keys(defaultErrorData)[index] || '';
-    return acc;
-  }, {});
+  const defaultFormData = { login: "", password: "", remember: false };
+  const defaultErrorData = { errorLoginMsg: "", errorPasswordMsg: "" };
 
   const [value, setValue] = useState(defaultFormData);
   const [error, setError] = useState(defaultErrorData);
+  const [captchaToken, setCaptchaToken] = useState("");
 
   const handleChange = (e) => {
     const { name, type, value: val, checked } = e.target;
-    const newValue = type === 'checkbox' ? checked : val;
-
-    setValue((prev) => ({ ...prev, [name]: newValue }));
-
-    if (errorKeys[name]) {
-      clearErrorOnInputChange(errorKeys[name], setError);
+    const newValue = type === "checkbox" ? checked : val;
+    setValue((p) => ({ ...p, [name]: newValue }));
+    // сбрасываем ошибку, если есть
+    if (name === "login" && error.errorLoginMsg) {
+      clearErrorOnInputChange("errorLoginMsg", setError);
+    }
+    if (name === "password" && error.errorPasswordMsg) {
+      clearErrorOnInputChange("errorPasswordMsg", setError);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    // проверяем капчу
+    if (!captchaToken) {
+      setError({
+        ...defaultErrorData,
+        errorLoginMsg: "Пожалуйста, подтвердите, что вы не робот",
+      });
+      return;
+    }
+
+    // валидация полей
     const rules = {
       login: {
         required: true,
-        type: 'text',
+        type: "text",
         minLength: 5,
-        message: 'Login must be at least 5 characters long',
+        message: "Логин должен быть не короче 5 символов",
       },
       password: {
         required: true,
-        type: 'text',
+        type: "text",
         minLength: 5,
-        message: 'Password must be at least 5 characters long',
+        message: "Пароль должен быть не короче 5 символов",
       },
     };
-
-    const validationResult = validateInputs(value, rules);
-
-    const newErrors = Object.keys(defaultErrorData).reduce((acc, key) => {
-      const field = key.replace(/^error/, '').replace(/Msg$/, '');
-      const fieldName = field.charAt(0).toLowerCase() + field.slice(1);
-      acc[key] = validationResult[fieldName] || '';
-      return acc;
-    }, {});
-
-    const hasErrors = Object.values(newErrors).some((msg) => msg !== '');
-
-    if (hasErrors) {
+    const validation = validateInputs(value, rules);
+    const newErrors = {
+      errorLoginMsg: validation.login || "",
+      errorPasswordMsg: validation.password || "",
+    };
+    if (newErrors.errorLoginMsg || newErrors.errorPasswordMsg) {
       setError(newErrors);
       return;
     }
 
     try {
       showLoader();
-      const response = await loginUser(value.login, value.password, value.remember);
-
+      // передаём токен капчи в API
+      const response = await loginUser(
+        value.login,
+        value.password,
+        value.remember,
+        captchaToken
+      );
 
       if (response.status === 200) {
-        console.log('Authentication successful:', response);
-        // Example: save rememberMe flag to localStorage
+        // успешный вход
         if (value.remember) {
-          localStorage.setItem('rememberedLogin', value.login);
+          localStorage.setItem("rememberedLogin", value.login);
         }
         return;
       }
-
+      // ошибка аутентификации
       if (response.response?.status === 401) {
-        const message = response.response.data?.error || '';
-        if (message.toLowerCase().includes('invalid')) {
-          setError({
-            ...defaultErrorData,
-            errorLoginMsg: 'Invalid login or password',
-            errorPasswordMsg: 'Invalid login or password',
-          });
-        }
+        setError({
+          errorLoginMsg: "Неверный логин или пароль",
+          errorPasswordMsg: "Неверный логин или пароль",
+        });
       }
-
-    } catch (err) {
+    } catch {
       setError({
-        ...defaultErrorData,
-        errorLoginMsg: 'Network error occurred',
-        errorPasswordMsg: 'Network error occurred',
+        errorLoginMsg: "Ошибка сети",
+        errorPasswordMsg: "Ошибка сети",
       });
     } finally {
       hideLoader();
@@ -115,9 +107,9 @@ function Login({ changeAuthorizationState }) {
   return (
     <div className="flex flex-col justify-center items-center w-full h-full">
       <Modal>
-        <form onSubmit={handleSubmit} className="w-full  ">
-          <InputLabel text="Login"/>
-          <div className={` w-full mt-[12px] ${error.errorLoginMsg && 'border-2 border-red-600 rounded-[10px]'}`}>
+        <form onSubmit={handleSubmit} className="w-full">
+          <InputLabel text="Login" />
+          <div className={`mt-2 ${error.errorLoginMsg && "border-red-600 border-2 rounded"} `}>
             <Input
               name="login"
               type="text"
@@ -126,53 +118,47 @@ function Login({ changeAuthorizationState }) {
               setValue={handleChange}
             />
           </div>
-          <span className="text-red-500">{error.errorLoginMsg && error.errorLoginMsg}</span>
+          <span className="text-red-500">{error.errorLoginMsg}</span>
 
-          <div className="mt-[24px]">
-            <InputLabel text="Password"/>
-            <div className={`mt-[12px] ${error.errorPasswordMsg && 'border-2 border-red-600 rounded-[10px]'}`}>
-              <Input
-                name="password"
-                type="password"
-                placeholder="Enter your password"
-                value={value.password}
-                setValue={handleChange}
-              />
-            </div>
-            <span className="text-red-500">{error.errorPasswordMsg && error.errorPasswordMsg}</span>
+          <InputLabel text="Password" className="mt-4" />
+          <div className={`mt-2 ${error.errorPasswordMsg && "border-red-600 border-2 rounded"}`}>
+            <Input
+              name="password"
+              type="password"
+              placeholder="Enter your password"
+              value={value.password}
+              setValue={handleChange}
+            />
+          </div>
+          <span className="text-red-500">{error.errorPasswordMsg}</span>
+
+          <div className="mt-4">
+            <Turnstile
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onVerify={(t) => setCaptchaToken(t)}
+              options={{ theme: "auto" }}
+            />
           </div>
 
-          <div className="mt-[20px] flex justify-between items-center cursor-pointer select-none">
-            <label className="flex items-center cursor-pointer">
-              <input
-                type="checkbox"
-                name="remember"
-                checked={value.remember}
-                onChange={handleChange}
-              />
-              <span className="ml-[4px]">Remember me</span>
-            </label>
-            <a href="#" className="text-blue-500 hover:underline">Forgot password?</a>
-          </div>
-
-          <div className="mt-[40px] cursor-pointer duration-300 hover:scale-103 select-none">
-            <Button
-              type="submit"
-              className="w-full"
-            >
+          <div className="mt-6 cursor-pointer hover:scale-105 transition">
+            <Button type="submit" className="w-full">
               Sign in
             </Button>
           </div>
-            <div className="m-auto w-full flex justify-center mt-4">
-              Don't have an account?
-              <a onClick={changeAuthorizationState} className="ml-[4px] text-blue-500 hover:underline cursor-pointer">
-                Register
-              </a>
-            </div>
+
+          <div className="mt-4 text-center">
+            Don't have an account?{" "}
+            <span
+              onClick={changeAuthorizationState}
+              className="text-blue-500 hover:underline cursor-pointer"
+            >
+              Register
+            </span>
+          </div>
         </form>
       </Modal>
     </div>
-);
+  );
 }
 
 Login.propTypes = {

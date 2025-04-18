@@ -14,30 +14,28 @@ export const verifyToken = async () => {
 };
 
 
-export const registerUser = async ({ name, surname, login, password, offer }) => {
+export const loginUser = async (username, password, remember = false, captcha) => {
   try {
     return await axios.post(
-      `${backendUrl}/auth/register`,
-      { name, surname, login, password, offer },
+      `${backendUrl}/auth/login`,
+      { username, password, remember, captcha },
       { withCredentials: true }
     );
   } catch (error) {
-    console.error('Registration failed:', error.response?.data || error.message);
+    console.error("Login failed:", error.response?.data || error.message);
     return error;
   }
 };
 
-
-
-export const loginUser = async (username, password, remember = false) => {
+export const registerUser = async ({ name, surname, login, password, offer, captcha }) => {
   try {
     return await axios.post(
-      `${backendUrl}/auth/login`,
-      { username, password, remember },
+      `${backendUrl}/auth/register`,
+      { name, surname, login, password, offer, captcha },
       { withCredentials: true }
     );
   } catch (error) {
-    console.error('Login failed:', error.response?.data || error.message);
+    console.error("Registration failed:", error.response?.data || error.message);
     return error;
   }
 };

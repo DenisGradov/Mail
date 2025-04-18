@@ -3,236 +3,244 @@ import { useState } from "react";
 import {
   clearErrorOnInputChange,
   handleGeneratePassword,
-  validateInputs
+  validateInputs,
 } from "../../Utils/Main.js";
 import { useLoaderStore } from "../../Store/Loader.js";
+import { useUserStore } from "../../Store/User.js";
 import InputLabel from "../Ui/InputLabel.jsx";
 import Input from "../Ui/Input.jsx";
 import PropTypes from "prop-types";
 import Button from "../Ui/Button.jsx";
-import { registerUser } from "../../Api/Auth.js";
-import { useUserStore } from "../../Store/User.js";
+import { Turnstile } from "@marsidev/react-turnstile";
 
 function Registration({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
-  const { loginUser, checkAuth } = useUserStore();
+  const { registerUser, checkAuth } = useUserStore();
 
   const defaultFormData = {
-    name: '',
-    surname: '',
-    login: '',
-    password: '',
-    offer: false
+    name: "",
+    surname: "",
+    login: "",
+    password: "",
+    offer: false,
   };
-
   const defaultErrorData = {
-    errorNameMsg: '',
-    errorSurnameMsg: '',
-    errorLoginMsg: '',
-    errorPasswordMsg: '',
-    errorOfferMsg: '',
+    errorNameMsg: "",
+    errorSurnameMsg: "",
+    errorLoginMsg: "",
+    errorPasswordMsg: "",
+    errorOfferMsg: "",
   };
-
-  const errorKeys = Object.keys(defaultFormData).reduce((acc, key, index) => {
-    acc[key] = Object.keys(defaultErrorData)[index];
-    return acc;
-  }, {});
 
   const [value, setValue] = useState(defaultFormData);
   const [error, setError] = useState(defaultErrorData);
+  const [captchaToken, setCaptchaToken] = useState("");
+
+  const errorKeys = {
+    name: "errorNameMsg",
+    surname: "errorSurnameMsg",
+    login: "errorLoginMsg",
+    password: "errorPasswordMsg",
+    offer: "errorOfferMsg",
+  };
 
   const handleChange = (e) => {
     const { name, type, value: val, checked } = e.target;
-    const newValue = type === 'checkbox' ? checked : val;
-    setValue((prev) => ({ ...prev, [name]: newValue }));
+    const newValue = type === "checkbox" ? checked : val;
+    setValue((p) => ({ ...p, [name]: newValue }));
     clearErrorOnInputChange(errorKeys[name], setError);
+  };
+
+  const handleGenerate = () => {
+    const pw = handleGeneratePassword();
+    setValue((p) => ({ ...p, password: pw }));
+    clearErrorOnInputChange("errorPasswordMsg", setError);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
+    if (!captchaToken) {
+      setError((p) => ({ ...p, errorLoginMsg: "Подтвердите, что вы не робот" }));
+      return;
+    }
+
+    // правила валидации
     const rules = {
       name: {
         required: true,
-        type: 'text',
+        type: "text",
         minLength: 2,
-        message: 'Name must be at least 2 characters',
+        message: "Не менее 2 символов",
       },
       surname: {
         required: true,
-        type: 'text',
+        type: "text",
         minLength: 2,
-        message: 'Surname must be at least 2 characters',
+        message: "Не менее 2 символов",
       },
       offer: {
         required: true,
-        type: 'boolean',
-        message: 'You must agree to the terms',
+        type: "boolean",
+        message: "Нужно согласиться",
       },
       login: {
         required: true,
-        type: 'text',
+        type: "text",
         minLength: 5,
-        message: 'Login must be at least 5 characters',
+        message: "Не менее 5 символов",
       },
       password: {
         required: true,
-        type: 'text',
+        type: "text",
         minLength: 5,
-        message: 'Password must be at least 5 characters',
+        message: "Не менее 5 символов",
       },
     };
 
-    const validationResult = validateInputs(value, rules);
-
-    const newErrors = Object.keys(defaultErrorData).reduce((acc, key) => {
-      const originalKey = key.replace(/^error/, '').replace(/Msg$/, '');
-      const lowerCaseKey = originalKey.charAt(0).toLowerCase() + originalKey.slice(1);
-      acc[key] = validationResult[lowerCaseKey] || '';
-      return acc;
-    }, {});
-
-    const hasErrors = Object.values(newErrors).some((msg) => msg !== '');
-
-    if (hasErrors) {
+    const validation = validateInputs(value, rules);
+    const newErrors = {
+      errorNameMsg: validation.name || "",
+      errorSurnameMsg: validation.surname || "",
+      errorLoginMsg: validation.login || "",
+      errorPasswordMsg: validation.password || "",
+      errorOfferMsg: validation.offer || "",
+    };
+    if (
+      newErrors.errorNameMsg ||
+      newErrors.errorSurnameMsg ||
+      newErrors.errorLoginMsg ||
+      newErrors.errorPasswordMsg ||
+      newErrors.errorOfferMsg
+    ) {
       setError(newErrors);
       return;
     }
 
     try {
       showLoader();
-
       const response = await registerUser({
         name: value.name,
         surname: value.surname,
         login: value.login,
         password: value.password,
-        offer: value.offer
+        offer: value.offer,
+        captcha: captchaToken,
       });
 
-      if (response.status === 200 || response.status === 201) {
+      if (response.status === 201 || response.status === 200) {
         await checkAuth();
         return;
       }
 
       if (response.response?.status === 400) {
-        const backendErrors = response.response.data?.errors || {};
-        const mappedErrors = { ...defaultErrorData };
-
-        if (backendErrors.name) mappedErrors.errorNameMsg = backendErrors.name;
-        if (backendErrors.surname) mappedErrors.errorSurnameMsg = backendErrors.surname;
-        if (backendErrors.login) mappedErrors.errorLoginMsg = backendErrors.login;
-        if (backendErrors.password) mappedErrors.errorPasswordMsg = backendErrors.password;
-        if (backendErrors.offer) mappedErrors.errorOfferMsg = backendErrors.offer;
-
-        setError(mappedErrors);
+        const backendErrors = response.response.data.errors || {};
+        setError((p) => ({
+          ...p,
+          errorNameMsg: backendErrors.name || "",
+          errorSurnameMsg: backendErrors.surname || "",
+          errorLoginMsg: backendErrors.login || "",
+          errorPasswordMsg: backendErrors.password || "",
+          errorOfferMsg: backendErrors.offer || "",
+        }));
       }
-    } catch (err) {
+    } catch {
       setError({
         ...defaultErrorData,
-        errorLoginMsg: 'Network error occurred',
-        errorPasswordMsg: 'Network error occurred',
+        errorLoginMsg: "Ошибка сети",
+        errorPasswordMsg: "Ошибка сети",
       });
     } finally {
       hideLoader();
     }
   };
 
-  const handleUpdatePassword = () => {
-    const newPassword = handleGeneratePassword();
-    const field = "password";
-    setValue((prev) => ({ ...prev, [field]: newPassword }));
-    clearErrorOnInputChange(errorKeys[field], setError);
-  };
-
   return (
     <div className="flex flex-col justify-center items-center w-full h-full">
       <Modal>
-        <form onSubmit={handleSubmit}>
-          <div className="flex justify-between items-center">
-            <div className="mr-[15px]">
-              <InputLabel text={'Name'} />
-              <div className={`w-full mt-[12px] ${error.errorNameMsg && 'border-2 border-red-600 rounded-[10px]'}`}>
-                <Input
-                  name="name"
-                  type="text"
-                  placeholder="John"
-                  value={value.name}
-                  setValue={handleChange}
-                />
-              </div>
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="flex space-x-4">
+            <div className="flex-1">
+              <InputLabel text="Name" />
+              <Input
+                name="name"
+                type="text"
+                value={value.name}
+                setValue={handleChange}
+                className={`mt-2 ${error.errorNameMsg && "border-red-600 border-2 rounded"}`}
+              />
               <span className="text-red-500">{error.errorNameMsg}</span>
             </div>
-            <div>
-              <InputLabel text={'Surname'} />
-              <div className={`w-full mt-[12px] ${error.errorSurnameMsg && 'border-2 border-red-600 rounded-[10px]'}`}>
-                <Input
-                  name="surname"
-                  type="text"
-                  placeholder="Doe"
-                  value={value.surname}
-                  setValue={handleChange}
-                />
-              </div>
+            <div className="flex-1">
+              <InputLabel text="Surname" />
+              <Input
+                name="surname"
+                type="text"
+                value={value.surname}
+                setValue={handleChange}
+                className={`mt-2 ${error.errorSurnameMsg && "border-red-600 border-2 rounded"}`}
+              />
               <span className="text-red-500">{error.errorSurnameMsg}</span>
             </div>
           </div>
 
-          <div className="mt-[20px]">
-            <InputLabel text={'Login'} />
-            <div className={`mt-[10px] ${error.errorLoginMsg && 'border-2 border-red-600 rounded-[10px]'}`}>
-              <Input
-                name="login"
-                type="text"
-                placeholder="Enter your login"
-                value={value.login}
-                setValue={handleChange}
-              />
-            </div>
-            <span className="text-red-500">{error.errorLoginMsg}</span>
-          </div>
+          <InputLabel text="Login" className="mt-4" />
+          <Input
+            name="login"
+            type="text"
+            value={value.login}
+            setValue={handleChange}
+            className={`mt-2 ${error.errorLoginMsg && "border-red-600 border-2 rounded"}`}
+          />
+          <span className="text-red-500">{error.errorLoginMsg}</span>
 
-          <div className="mt-[20px]">
-            <div className="flex justify-between items-center cursor-pointer select-none">
-              <InputLabel text={'Create a password'} />
-              <div onClick={handleUpdatePassword}>
-                <InputLabel text={'Generate'} />
-              </div>
-            </div>
-            <div className={`mt-[10px] ${error.errorPasswordMsg && 'border-2 border-red-600 rounded-[10px]'}`}>
-              <Input
-                name="password"
-                type="password"
-                placeholder="Enter password"
-                value={value.password}
-                setValue={handleChange}
-              />
-            </div>
-            <span className="text-red-500">{error.errorPasswordMsg}</span>
+          <div className="mt-4 flex justify-between items-center">
+            <InputLabel text="Password" />
+            <Button type="button" onClick={handleGenerate}>
+              Generate
+            </Button>
           </div>
+          <Input
+            name="password"
+            type="password"
+            value={value.password}
+            setValue={handleChange}
+            className={`mt-2 ${error.errorPasswordMsg && "border-red-600 border-2 rounded"}`}
+          />
+          <span className="text-red-500">{error.errorPasswordMsg}</span>
 
-          <div className="mt-[20px] flex justify-between items-center cursor-pointer select-none">
-            <label className="flex items-center cursor-pointer">
-              <input
-                name="offer"
-                checked={value.offer}
-                onChange={handleChange}
-                type="checkbox"
-              />
-              <span className="ml-[4px] text-[15px] font-normal text-text-secondary">I agree to the <a href="#">terms</a></span>
-            </label>
-          </div>
+          <label className="mt-4 flex items-center">
+            <input
+              type="checkbox"
+              name="offer"
+              checked={value.offer}
+              onChange={handleChange}
+            />
+            <span className="ml-2">I agree to the terms</span>
+          </label>
           <span className="text-red-500">{error.errorOfferMsg}</span>
 
-          <div className="mt-[40px] cursor-pointer duration-300 hover:scale-103 select-none">
-            <Button className="w-full" onClick={handleSubmit}>Create account</Button>
+          <div className="mt-4">
+            <Turnstile
+              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              onVerify={(t) => setCaptchaToken(t)}
+              options={{ theme: "auto" }}
+            />
           </div>
 
-          <div className="m-auto w-full flex justify-center mt-4">
-            <span>Already have an account?
-              <a onClick={changeAuthorizationState} className="ml-[5px]" href="#">
-                Sign in
-              </a>
+          <div className="mt-6 cursor-pointer hover:scale-105 transition">
+            <Button type="submit" className="w-full">
+              Create account
+            </Button>
+          </div>
+
+          <div className="mt-4 text-center">
+            Already have an account?{" "}
+            <span
+              onClick={changeAuthorizationState}
+              className="text-blue-500 hover:underline cursor-pointer"
+            >
+              Sign in
             </span>
           </div>
         </form>
