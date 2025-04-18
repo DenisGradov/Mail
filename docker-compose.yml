@@ -14,10 +14,10 @@ services:
 
   frontend:
     build:
-      context: ./Frontend       # берём Dockerfile прямо из Frontend/
-      dockerfile: Dockerfile
+      context: .                 # теперь контекст = корень вашего репо
+      dockerfile: Frontend/Dockerfile
     env_file:
-      - .env.frontend           # так же, как у бэка
+      - .env.frontend            # подтягиваем переменные в рантайм (необязательно, но по аналогии)
     ports:
       - "5042:80"
     depends_on:

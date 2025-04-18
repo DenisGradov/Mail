@@ -1,29 +1,27 @@
-# ---------- STAGE 1: Vite build ----------
+# ---------- STAGE 1: build React + Vite ----------
 FROM node:20-alpine AS builder
-
 WORKDIR /app
 
-# 1) deps
-COPY package*.json ./
+# 1) Копируем .env.frontend (он рядом с docker-compose.yml)
+COPY .env.frontend .env
+
+# 2) Устанавливаем зависимости из package.json фронта
+COPY Frontend/package*.json ./
 RUN npm ci
 
-# 2) положим .env.frontend в корень билда (станет .env)
-COPY ../.env.frontend .env
+# 3) Копируем весь исходник фронта
+COPY Frontend ./
 
-# 3) копируем остальной код фронта
-COPY . .
-
-# 4) билд — Vite подхватит все VITE_* из .env
+# 4) Билдим — Vite прочитает VITE_* из .env
 RUN npm run build
 
-# ---------- STAGE 2: Nginx ----------
+# ---------- STAGE 2: Nginx отдаёт статику ----------
 FROM nginx:1.27-alpine
 
-# свой nginx.conf (если есть)
-COPY nginx.conf /etc/nginx/nginx.conf
 
-# копируем собранный dist
+
+# копируем собранные артефакты
 COPY --from=builder /app/dist/ /usr/share/nginx/html/
 
 EXPOSE 80
-CMD ["nginx","-g","daemon off;"]
+CMD ["nginx", "-g", "daemon off;"]
