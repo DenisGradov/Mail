@@ -3,6 +3,9 @@ version: "3.9"
 services:
   backend:
     build: ./Backend
+    ports:
+      - "5050:5050"
+      - "25:25"
     env_file: .env.backend
     volumes:
       - ./Backend/DataBase:/app/DataBase
@@ -14,8 +17,6 @@ services:
       dockerfile: ./nginx/Dockerfile
     ports:
       - "5042:80"
-      - "5050:5050"
-      - "25:25"
     depends_on:
       - backend
     restart: unless-stopped
