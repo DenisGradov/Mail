@@ -16,35 +16,31 @@ router.get('/', async (req, res) => {
   const user = await getUserByToken(token);
   if (!user) return res.status(401).json({ error: 'Unauthorized' });
 
-  // параметризация
   const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
   const cursor = req.query.cursor;
 
-  // достаём и парсим JSON‑поле
   let arr = [];
   try { arr = user.emails ? JSON.parse(user.emails) : []; }
   catch { arr = []; }
 
-  // сортируем по дате (самые новые первыми)
   arr.sort((a, b) => new Date(b.date) - new Date(a.date));
 
-  // вычисляем откуда отдать
   let start = 0;
   if (cursor) {
     const idx = arr.findIndex(m => m.id === cursor);
     if (idx !== -1) start = idx + 1;
   }
 
-  const items     = arr.slice(start, start + limit);
-  const nextCursor= items.length ? items[items.length - 1].id : null;
-  const hasMore   = start + items.length < arr.length;
+  const items      = arr.slice(start, start + limit);
+  const nextCursor = items.length ? items[items.length - 1].id : null;
+  const hasMore    = start + items.length < arr.length;
 
   res.json({ items, nextCursor, hasMore });
 });
 
 /**
  * GET /api/mail/stream
- * SSE‑поток: пушим новые письма, когда mailEmitter.emit('newEmail')
+ * SSE‑поток: пушим новые письма по событию mailEmitter
  */
 router.get('/stream', async (req, res) => {
   const token = req.cookies?.auth_token;
