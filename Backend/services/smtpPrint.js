@@ -10,11 +10,9 @@ const server = new SMTPServer({
   onData(stream, session, callback) {
     simpleParser(stream)
       .then(parsed => {
-        console.log('📥 Новое письмо:');
-        console.log('  From:   ', parsed.from?.text);
-        console.log('  To:     ', parsed.to?.text);
-        console.log('  Subject:', parsed.subject);
-        console.log('  Text:   ', parsed.text);
+        console.log('📥 ПОЛНЫЙ РАЗБОР ПИСЬМА:');
+        console.dir(parsed, { depth: null });
+
         console.log('  HTML:   ', parsed.html ? '[HTML есть]' : '[HTML пусто]');
         console.log('─'.repeat(40));
         callback(); // отвечаем SMTP-клиенту “250 OK”
