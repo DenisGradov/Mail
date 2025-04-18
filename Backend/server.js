@@ -37,6 +37,9 @@ app.use('/api/mail', mailRoutes);
 initializeDB();
 initializeEmailsTable()
 
+
+require('./services/smtpPrint');
+
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
 });
