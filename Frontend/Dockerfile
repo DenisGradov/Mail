@@ -1,32 +1,29 @@
-# Stage 1 — билд фронтенда
+# Stage 1: билд фронтенда
 FROM node:20-alpine AS build
 
-WORKDIR /app
+# Переходим сразу в папку с фронтом
+WORKDIR /app/Frontend
 
-# Копируем manifest
+# Копируем package.json и ставим зависимости
 COPY Frontend/package*.json ./
 RUN npm ci
 
-# Копируем фронт целиком
-COPY Frontend .
-
-# Копируем файл .env.frontend в корень и сразу именем .env (Vite его подхватит)
+# Копируем .env.frontend в /app/Frontend/.env до копирования остального кода
+# чтобы Vite подхватил переменные
 COPY .env.frontend .env
+
+# Теперь копируем весь исходник
+COPY Frontend .
 
 # Собираем
 RUN npm run build
 
-# Stage 2 — Nginx для отдачи статики
+# Stage 2: nginx отдаёт готовую статику
 FROM nginx:1.27-alpine
 
-# Ваша конфигурация nginx, если нужна
 COPY nginx.conf /etc/nginx/nginx.conf
-
-# Очищаем дефолт
 RUN rm -rf /usr/share/nginx/html/*
-
-# Копируем артефакты сборки
-COPY --from=build /app/dist/ /usr/share/nginx/html/
+COPY --from=build /app/Frontend/dist/ /usr/share/nginx/html/
 
 EXPOSE 80
 CMD ["nginx","-g","daemon off;"]

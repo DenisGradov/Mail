@@ -30,6 +30,7 @@ jobs:
             .git/
             .env
             .env.backend
+            .env.frontend
             *.db
 
       # 3) перезапускаем контейнеры

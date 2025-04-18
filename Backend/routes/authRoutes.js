@@ -47,31 +47,45 @@ router.get('/verify-token', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
-  const { username, password, remember } = req.body;
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
-  if (!username || !password) {
-    return res.status(400).json({ error: 'Username and password are required' });
+async function verifyTurnstile(token, remoteIp) {
+  const params = new URLSearchParams();
+  params.append("secret", TURNSTILE_SECRET);
+  params.append("response", token);
+  if (remoteIp) params.append("remoteip", remoteIp);
+
+  const res = await fetch(
+    "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+    { method: "POST", body: params }
+  );
+  const json = await res.json();
+  return json.success;
+}
+
+// LOGIN
+router.post("/login", async (req, res) => {
+  const { username, password, remember, captcha } = req.body;
+  // 1) проверка капчи
+  if (!captcha || !(await verifyTurnstile(captcha, req.ip))) {
+    return res.status(400).json({ error: "Captcha verification failed" });
   }
-
+  // 2) валидация
+  if (!username || !password) {
+    return res.status(400).json({ error: "Username and password required" });
+  }
   try {
-    const result = await loginUser(username, password);
-
-    if (!result) {
-      return res.status(401).json({ error: 'Invalid login or password' });
-    }
+    const result = await dbLogin(username, password);
+    if (!result) return res.status(401).json({ error: "Invalid login or password" });
 
     const { token, user } = result;
-
-    res.cookie('auth_token', token, {
+    res.cookie("auth_token", token, {
       httpOnly: true,
       maxAge: remember ? 1000 * 60 * 60 * 24 * 14 : undefined,
-      sameSite: 'Lax',
+      sameSite: "Lax",
       secure: false,
     });
-
-    res.status(200).json({
-      message: 'Login successful',
+    res.json({
       userId: user.id,
       login: user.login,
       email: user.email,
@@ -81,51 +95,46 @@ router.post('/login', async (req, res) => {
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 
-
-router.post('/register', async (req, res) => {
-  const { login, password, name, surname, offer } = req.body;
+// REGISTER
+router.post("/register", async (req, res) => {
+  const { login, password, name, surname, offer, captcha } = req.body;
+  // 1) проверка капчи
+  if (!captcha || !(await verifyTurnstile(captcha, req.ip))) {
+    return res.status(400).json({ errors: { captcha: "Пожалуйста, подтвердите, что вы не робот" } });
+  }
+  // 2) базовая валидация
   const errors = {};
-
-  if (!offer) errors.offer = 'You must agree to the terms';
-  if (!login || login.length < 5) errors.login = 'Login must be at least 5 characters';
-  if (!password || password.length < 5) errors.password = 'Password must be at least 5 characters';
-  if (!name || name.length < 2) errors.name = 'Name must be at least 2 characters';
-  if (!surname || surname.length < 2) errors.surname = 'Surname must be at least 2 characters';
-
-  if (Object.keys(errors).length > 0) {
+  if (!offer) errors.offer = "You must agree to the terms";
+  if (!login || login.length < 5) errors.login = "Login must be at least 5 characters";
+  if (!password || password.length < 5) errors.password = "Password must be at least 5 characters";
+  if (!name || name.length < 2) errors.name = "Name must be at least 2 characters";
+  if (!surname || surname.length < 2) errors.surname = "Surname must be at least 2 characters";
+  if (Object.keys(errors).length) {
     return res.status(400).json({ errors });
   }
-
   try {
-    const isLoginUnique = await isFieldUnique('login', login);
+    const isUnique = await isFieldUnique("login", login);
+    if (!isUnique) return res.status(400).json({ errors: { login: "Login already exists" } });
 
-    if (!isLoginUnique) errors.login = 'Login already exists';
-
-    if (Object.keys(errors).length > 0) {
-      return res.status(400).json({ errors });
-    }
-
-    const email = `${login}@${domain}`;
+    const email = `${login}@${process.env.DEFAULT_MAIL}`;
     const token = generateToken(64);
-    const hashedPassword = hashPassword(password);
+    const hashed = hashPassword(password);
+    const userId = await addUser({ email, login, password: hashed, name, surname, token });
 
-    const userId = await addUser({ email, login, password: hashedPassword, name, surname, token });
-
-    res.cookie('auth_token', token, {
+    res.cookie("auth_token", token, {
       httpOnly: true,
-      maxAge: 1000 * 60 * 60 * 24 * 14, // 2 недели
-      sameSite: 'Lax',
+      maxAge: 1000 * 60 * 60 * 24 * 14,
+      sameSite: "Lax",
       secure: false,
     });
-
-    res.status(201).json({ message: 'Registration successful', userId });
+    res.status(201).json({ userId });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    res.status(500).json({ error: "Internal server error" });
   }
 });
 

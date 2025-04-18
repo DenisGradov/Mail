@@ -6,21 +6,21 @@ services:
     ports:
       - "5050:5050"
       - "25:2525"
-    env_file: .env.backend
+    env_file:
+      - .env.backend
     volumes:
       - ./Backend/DataBase:/app/DataBase
     restart: unless-stopped
 
   nginx:
     build:
-      context: .                 # контекст — корень репо, где лежит Frontend/
+      context: .
       dockerfile: ./nginx/Dockerfile
     ports:
       - "5042:80"
     depends_on:
       - backend
     restart: unless-stopped
-
 
 volumes:
   db_data:

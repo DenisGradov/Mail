@@ -13,6 +13,13 @@ function Login({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
   const { loginUser } = useUserStore();
 
+  console.log(
+    "[Env] :", import.meta.env,
+    "[Env] VITE_BACKEND_URL:", import.meta.env.VITE_BACKEND_URL,
+    "VITE_TURNSTILE_SITE_KEY:", import.meta.env.VITE_TURNSTILE_SITE_KEY
+  );
+
+
   const defaultFormData = { login: "", password: "", remember: false };
   const defaultErrorData = { errorLoginMsg: "", errorPasswordMsg: "" };
 
