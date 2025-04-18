@@ -4,9 +4,13 @@ export function stripHtml(html) {
   return tmp.textContent || tmp.innerText || '';
 }
 
-export const getShortText = (text,limit,line) => {
-  return (text.length > limit) ? (line&&'— ') + text.slice(0, limit) + '...' : (line&&'— ') + text;
-}
+export const getShortText = (text, limit, line) => {
+  const prefix = line ? '— ' : '';
+  return text.length > limit
+    ? prefix + text.slice(0, limit) + '...'
+    : prefix + text;
+};
+
 
 export const getDate = (dateString) => {
   const date = new Date(dateString);

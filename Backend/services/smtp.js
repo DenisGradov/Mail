@@ -33,7 +33,8 @@ const server = new SMTPServer({
             subject:     parsed.subject || '',
             date:        parsed.date?.toISOString() || new Date().toISOString(),
             contentType: parsed.html ? 'text/html' : 'text/plain',
-            content:     parsed.html || parsed.text || '',
+            text: parsed.text || '',
+            html: parsed.html || '',
             attachments: []
           };
 

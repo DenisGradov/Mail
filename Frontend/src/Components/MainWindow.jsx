@@ -30,15 +30,9 @@ import {
 
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
-import { getShortText } from "../Utils/Main.js";
+import {getShortText, stripHtml} from "../Utils/Main.js";
 
 export default function MainWindow() {
-  // Utility to strip HTML tags if no plain text
-  function stripHtml(html) {
-    const tmp = document.createElement("div");
-    tmp.innerHTML = html || "";
-    return tmp.textContent || tmp.innerText || "";
-  }
   // Full date formatter
   function formatDateFull(dateStr) {
     return new Date(dateStr).toLocaleString("en-US", {
@@ -304,7 +298,11 @@ export default function MainWindow() {
                       {getShortText(mail.subject || "Без темы", 30, false)}
                     </div>
                     <div className={`${mail.viewed ? "font-medium text-text-secondary" : "font-bold text-text-secondary-60"} text-[17px]`}>
-                      {getShortText(mail.text || stripHtml(mail.html) || "No text", 80, true)}
+                      {getShortText(
+                        mail.text || stripHtml(mail.html) || "No text",
+                        80,
+                        true
+                      )}
                     </div>
                   </div>
                   <div className="flex-[0.5%] text-center">{formatDateFull(mail.date)}</div>
