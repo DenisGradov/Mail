@@ -9,6 +9,7 @@ dotenv.config({ path: path.join(__dirname, '..', 'Frontend', '.env') });
 const authRoutes = require('./routes/authRoutes');
 const mailRoutes = require('./routes/mailRoutes');
 const { initializeDB } = require('./DataBase/functions/createUsersTable');
+const {initializeEmailsTable} = require("./DataBase/functions/createEmailsTable");
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 5005;
@@ -34,6 +35,7 @@ app.use('/api/mail', mailRoutes);
 
 // Создание БД и таблицы
 initializeDB();
+initializeEmailsTable()
 
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
