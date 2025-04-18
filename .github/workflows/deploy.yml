@@ -29,9 +29,8 @@ jobs:
           recursive: true
           exclude: |                # не тащим тяжести
             .git/
-            node_modules/
-            Frontend/node_modules/
-            Backend/node_modules/
+            .env
+            .env.backend
 
       # 3) перезапускаем контейнеры
       - name: Run docker‑compose on server
