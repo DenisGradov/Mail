@@ -75,7 +75,7 @@ const server = new SMTPServer({
   },
 });
 
-const PORT = process.env.SMTP_PORT || 25;
+const PORT = process.env.SMTP_PORT || 2525;
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 SMTP Print‑сервер запущен на порту ${PORT}.`);
+  console.log(`🚀 SMTP‑сервер запущен на порту ${PORT}.`);
 });
