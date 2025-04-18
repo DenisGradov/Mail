@@ -5,7 +5,7 @@ const { simpleParser } = require('mailparser');
 const server = new SMTPServer({
   // Без авторизации, всё принимаем
   authOptional: true,
-
+  secure: false,
   // Здесь прилетает поток письма
   onData(stream, session, callback) {
     simpleParser(stream)
