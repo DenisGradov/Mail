@@ -31,6 +31,7 @@ import {
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
 import {getDate, getShortText, stripHtml} from "../Utils/Main.js";
+import {fetchEmails} from "../Api/Mail.js";
 
 export default function MainWindow() {
 
@@ -60,10 +61,20 @@ export default function MainWindow() {
     Favorites: { title: "Favorites", icon: <FaBookmark />, value: 0 },
   };
 
-  // Initialize mails once
   useEffect(() => {
-    initMails(mailsPerPage);
-  }, [initMails]);
+    fetchEmails(mailsPerPage, null).then(({ items, nextCursor, hasMore }) => {
+      useMailStore.setState({ mails: items, cursor: nextCursor, hasMore });
+    });
+
+    const iv = setInterval(() => {
+      fetchEmails(mailsPerPage, null).then(({ items, nextCursor, hasMore }) => {
+        useMailStore.setState({ mails: items, cursor: nextCursor, hasMore });
+      });
+    }, 15000);
+
+    return () => clearInterval(iv);
+  }, []);
+
 
   // Handle window resize
   useEffect(() => {
@@ -216,7 +227,7 @@ export default function MainWindow() {
           <div className="840px:absolute 840px:right-[16px] flex items-center 450px:gap-[14px] gap-[5px] ml-[5px] 450px:ml-[30px]">
             <FaBell className="text-[22px] hover-anim text-icons cursor-pointer" />
             <FaCog className="text-[22px] hover-anim hidden 375px:block text-icons cursor-pointer" />
-            <EmptyAvatar className="w-[40px] h-[40px] hidden 450px:flex" name={user.name} />
+            <EmptyAvatar className="w-[33px] h-[33px] hidden 450px:flex items-center justify-center" name={user.name} />
           </div>
         </div>
         <Line className="mt-[91px]" />
@@ -240,13 +251,13 @@ export default function MainWindow() {
           </div>
           <div className="flex items-center justify-between 470px:justify-center">
             <SelectSort value={sortType} onChange={handleSortChange} />
-            <div className="flex items-center">
+            <div className="flex items-center ml-[3px]">
               <FaArrowLeft
                 onClick={handlePrevPage}
                 className={`hover-anim cursor-pointer ${currentPage === 1 && "opacity-40 pointer-events-none"}`}
               />
-              <span className="text-text-secondary text-[15px]">
-                {`${rangeStart}-${rangeEnd} из ${filteredMails.length}`}
+              <span className="text-text-secondary text-[15px] mx-[3px]">
+                {`${rangeStart}-${rangeEnd} from ${filteredMails.length}`}
               </span>
               <FaArrowRight
                 onClick={handleNextPage}
