@@ -27,7 +27,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 
-import { getDate, getShortText } from "../Utils/Main.js";
+import {getDate, getShortText, stripHtml} from "../Utils/Main.js";
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
 
@@ -340,7 +340,8 @@ export default function MainWindow() {
                         mail.viewed ? "text-icons font-medium" : "text-text-primary font-bold"
                       }`}
                     >
-                      {getShortText(mail.from, 20, false)}
+                      {getShortText(mail.from, 30, false)}
+
                     </span>
                   </div>
                   <div className="ml-6">
@@ -360,7 +361,11 @@ export default function MainWindow() {
                           : "text-text-secondary-60 font-bold"
                       }`}
                     >
-                      {getShortText(mail.content, 80, true)}
+                      {getShortText(
+                        mail.text || stripHtml(mail.html),
+                        80,
+                        true
+                      )}
                     </span>
                   </div>
                 </div>

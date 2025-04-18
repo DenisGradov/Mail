@@ -1,5 +1,11 @@
+export function stripHtml(html) {
+  const tmp = document.createElement('div');
+  tmp.innerHTML = html;
+  return tmp.textContent || tmp.innerText || '';
+}
+
 export const getShortText = (text,limit,line) => {
-  return text.length > limit ? (line&&'— ') + text.slice(0, limit) + '...' : (line&&'— ') + text;
+  return (text.length > limit) ? (line&&'— ') + text.slice(0, limit) + '...' : (line&&'— ') + text;
 }
 
 export const getDate = (dateString) => {
