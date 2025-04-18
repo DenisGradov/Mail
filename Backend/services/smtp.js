@@ -1,8 +1,10 @@
 const { SMTPServer }   = require('smtp-server');
 const { simpleParser } = require('mailparser');
+const fs               = require('fs');
+const path             = require('path');
+
 const { getUserByEmail, updateUserEmails } = require('../DataBase/functions/updateUserEmails');
-const fs   = require('fs');
-const path = require('path');
+const { mailEmitter }                     = require('./mailEmitter');
 
 const server = new SMTPServer({
   authOptional: true,
@@ -12,38 +14,37 @@ const server = new SMTPServer({
     simpleParser(stream)
       .then(async parsed => {
         try {
-          // 1) Найдём пользователя по адресу назначения
-          const toAddrRaw = parsed.to?.value?.[0]?.address || '';
-          const toAddr    = toAddrRaw.trim().toLowerCase();
-          const user = await getUserByEmail(toAddr);
+          // 1) нормализуем адрес, ищем юзера
+          const toRaw  = parsed.to?.value?.[0]?.address || '';
+          const toAddr = toRaw.trim().toLowerCase();
+          const user   = await getUserByEmail(toAddr);
           if (!user) {
-            console.warn(`⚠️ Юзер с email=${toAddr} не найден, пропускаем.`);
+            console.warn(`⚠️ Юзер ${toAddr} не найден — пропускаем письмо.`);
             return callback();
           }
 
-          // 2) Собираем объект письма
+          // 2) собираем объект письма
           const emailObj = {
-            id:           parsed.messageId,
-            favorite:     false,
-            viewed:       false,
-            from:         parsed.from?.value?.[0]?.address || '',
-            to:           toAddr,
-            subject:      parsed.subject || '',
-            date:         parsed.date?.toISOString() || new Date().toISOString(),
-            contentType:  parsed.html ? 'text/html' : 'text/plain',
-            content:      parsed.html || parsed.text || '',
-            attachments:  []
+            id:          parsed.messageId,
+            favorite:    false,
+            viewed:      false,
+            from:        parsed.from?.value?.[0]?.address || '',
+            to:          toAddr,
+            subject:     parsed.subject || '',
+            date:        parsed.date?.toISOString() || new Date().toISOString(),
+            contentType: parsed.html ? 'text/html' : 'text/plain',
+            content:     parsed.html || parsed.text || '',
+            attachments: []
           };
 
-          // 3) Сохраняем вложения на диск и пушим метаданные в JSON
+          // 3) сохраняем вложения на диск + метаданные
           if (parsed.attachments?.length) {
             const uploadDir = path.join(__dirname, '..', 'uploads', `mail_${Date.now()}`);
             fs.mkdirSync(uploadDir, { recursive: true });
-
             for (const att of parsed.attachments) {
-              const fn       = att.filename || `attach_${Date.now()}`;
-              const fp       = path.join(uploadDir, fn);
-              fs.writeFileSync(fp, att.content);  // умеренно памяти, дальше дропаем буфер
+              const fn = att.filename || `attach_${Date.now()}`;
+              const fp = path.join(uploadDir, fn);
+              fs.writeFileSync(fp, att.content);
               emailObj.attachments.push({
                 filename:    fn,
                 contentType: att.contentType,
@@ -53,25 +54,27 @@ const server = new SMTPServer({
             }
           }
 
-          // 4) Обновляем users.emails
+          // 4) пушим в JSON‑поле и эмитим событие
           await updateUserEmails(user.id, emailObj);
-          console.log(`✅ Письмо ${emailObj.id} добавлено в JSON-поле пользователя ${user.id}`);
+          mailEmitter.emit('newEmail', emailObj);
+          console.log(`✅ Письмо ${emailObj.id} сохранено и эмитировано.`);
         } catch (err) {
-          console.error('❌ Ошибка при сохранении письма в JSON:', err);
+          console.error('❌ Ошибка обработки письма:', err);
         }
         callback();
       })
       .catch(err => {
-        console.error('❌ Ошибка парсинга письма:', err);
+        console.error('❌ SMTP‑парсинг упал:', err);
         callback(err);
       });
   },
 
   onError(err) {
     console.error('❌ SMTP Server error:', err);
-  }
+  },
 });
 
-server.listen(25, '0.0.0.0', () => {
-  console.log('🚀 SMTP Print‑сервер запущен на порту 25. Жду писем :)');
+const PORT = process.env.SMTP_PORT || 25;
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`🚀 SMTP Print‑сервер запущен на порту ${PORT}.`);
 });

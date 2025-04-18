@@ -1,38 +1,74 @@
 const express = require('express');
-const router = express.Router();
+const router  = express.Router();
 
-const { sendEmail } = require('../services/emailService');
-const { addEmail } = require('../DataBase/functions/addEmail');
+const { getUserByToken } = require('../DataBase/functions/getUserByToken');
+const { mailEmitter }    = require('../services/mailEmitter');
 
-// POST /api/mail/send
-router.post('/send', async (req, res) => {
-  try {
-    const { to, subject, text, html } = req.body;
-    if (!to || !subject || (!text && !html))
-      return res.status(400).json({ success: false, message: 'Missing fields' });
+/**
+ * GET /api/mail
+ * Пакетная отдача писем из JSON‑поля users.emails
+ * → ?limit=Number (max 200), cursor=lastEmail.id
+ */
+router.get('/', async (req, res) => {
+  const token = req.cookies?.auth_token;
+  if (!token) return res.status(401).json({ error: 'Unauthorized' });
 
-    const info = await sendEmail({ to, subject, text, html });
-    res.json({ success: true, messageId: info.messageId });
-  } catch (err) {
-    console.error('❌ send error:', err);
-    res.status(500).json({ success: false, message: 'Email send failed' });
+  const user = await getUserByToken(token);
+  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+
+  // параметризация
+  const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
+  const cursor = req.query.cursor;
+
+  // достаём и парсим JSON‑поле
+  let arr = [];
+  try { arr = user.emails ? JSON.parse(user.emails) : []; }
+  catch { arr = []; }
+
+  // сортируем по дате (самые новые первыми)
+  arr.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+  // вычисляем откуда отдать
+  let start = 0;
+  if (cursor) {
+    const idx = arr.findIndex(m => m.id === cursor);
+    if (idx !== -1) start = idx + 1;
   }
+
+  const items     = arr.slice(start, start + limit);
+  const nextCursor= items.length ? items[items.length - 1].id : null;
+  const hasMore   = start + items.length < arr.length;
+
+  res.json({ items, nextCursor, hasMore });
 });
 
-// POST /api/mail/receive   <-- веб‑хук входящих писем
-router.post('/receive', async (req, res) => {
-  try {
-    const { from, to, subject, text } = req.body;
-    if (!from || !to)
-      return res.status(400).json({ success: false, message: 'Missing fields' });
+/**
+ * GET /api/mail/stream
+ * SSE‑поток: пушим новые письма, когда mailEmitter.emit('newEmail')
+ */
+router.get('/stream', async (req, res) => {
+  const token = req.cookies?.auth_token;
+  if (!token) return res.status(401).end();
 
-    await addEmail({ sender: from, recipient: to, subject, body: text });
-    console.log(`📥 ${from} ➡ ${to}: ${subject}`);
-    res.json({ success: true });
-  } catch (err) {
-    console.error('❌ receive error:', err);
-    res.status(500).json({ success: false, message: 'Inbound processing failed' });
-  }
+  const user = await getUserByToken(token);
+  if (!user) return res.status(401).end();
+
+  res.set({
+    'Content-Type' : 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    Connection     : 'keep-alive',
+  });
+  res.flushHeaders();
+
+  const onNew = (email) => {
+    if (email.to === user.email) {
+      res.write(`event: email\n`);
+      res.write(`data: ${JSON.stringify(email)}\n\n`);
+    }
+  };
+
+  mailEmitter.on('newEmail', onNew);
+  req.on('close', () => mailEmitter.off('newEmail', onNew));
 });
 
 module.exports = router;
