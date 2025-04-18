@@ -25,7 +25,7 @@ function App() {
 
   return (
     <div className="w-full h-full absolute top-0 left-0  flex flex-col justify-center items-center">
-      <div className={`${theme} min-h-screen  text-text-primary`}>
+      <div className={`${theme || "theme-black"} min-h-screen  text-text-primary`}>
         {user.status === 503 ? <TechnicalWorks/> :
 
 

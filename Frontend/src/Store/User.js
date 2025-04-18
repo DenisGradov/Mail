@@ -10,7 +10,7 @@ export const useUserStore = create(
   persist(
     (set, get) => ({
       auth: { isAuthenticated: false },
-      theme: "Black",
+      theme: "theme-black",
       accounts: [],
       user: {},
 
