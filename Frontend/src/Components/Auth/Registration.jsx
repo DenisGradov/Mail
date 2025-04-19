@@ -9,147 +9,138 @@ import { useLoaderStore } from "../../Store/Loader.js";
 import { useUserStore } from "../../Store/User.js";
 import InputLabel from "../Ui/InputLabel.jsx";
 import Input from "../Ui/Input.jsx";
-import PropTypes from "prop-types";
 import Button from "../Ui/Button.jsx";
 import { Turnstile } from "@marsidev/react-turnstile";
+import PropTypes from "prop-types";
 
-function Registration({ changeAuthorizationState }) {
+export default function Registration({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
   const { registerUser, checkAuth } = useUserStore();
 
-  const defaultFormData = {
+  const [form, setForm] = useState({
     name: "",
     surname: "",
     login: "",
     password: "",
     offer: false,
-  };
-  const defaultErrorData = {
-    errorNameMsg: "",
-    errorSurnameMsg: "",
-    errorLoginMsg: "",
-    errorPasswordMsg: "",
-    errorOfferMsg: "",
-  };
-
-  const [value, setValue] = useState(defaultFormData);
-  const [error, setError] = useState(defaultErrorData);
+  });
+  const [errors, setErrors] = useState({
+    name: "",
+    surname: "",
+    login: "",
+    password: "",
+    offer: "",
+    captcha: "",
+  });
   const [captchaToken, setCaptchaToken] = useState("");
 
-  const errorKeys = {
-    name: "errorNameMsg",
-    surname: "errorSurnameMsg",
-    login: "errorLoginMsg",
-    password: "errorPasswordMsg",
-    offer: "errorOfferMsg",
-  };
-
   const handleChange = (e) => {
-    const { name, type, value: val, checked } = e.target;
-    const newValue = type === "checkbox" ? checked : val;
-    setValue((p) => ({ ...p, [name]: newValue }));
-    clearErrorOnInputChange(errorKeys[name], setError);
+    const { name, type, value, checked } = e.target;
+    setForm((f) => ({
+      ...f,
+      [name]: type === "checkbox" ? checked : value,
+    }));
+    if (errors[name]) {
+      clearErrorOnInputChange(name, setErrors);
+    }
   };
 
   const handleGenerate = () => {
     const pw = handleGeneratePassword();
-    setValue((p) => ({ ...p, password: pw }));
-    clearErrorOnInputChange("errorPasswordMsg", setError);
+    setForm((f) => ({ ...f, password: pw }));
+    if (errors.password) {
+      clearErrorOnInputChange("password", setErrors);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-
-    if (!captchaToken) {
-      setError((p) => ({ ...p, errorLoginMsg: "Подтвердите, что вы не робот" }));
-      return;
-    }
-
-    // правила валидации
     const rules = {
       name: {
         required: true,
         type: "text",
         minLength: 2,
-        message: "Не менее 2 символов",
+        message: "Name must be at least 2 characters",
       },
       surname: {
         required: true,
         type: "text",
         minLength: 2,
-        message: "Не менее 2 символов",
-      },
-      offer: {
-        required: true,
-        type: "boolean",
-        message: "Нужно согласиться",
+        message: "Surname must be at least 2 characters",
       },
       login: {
         required: true,
         type: "text",
         minLength: 5,
-        message: "Не менее 5 символов",
+        message: "Login must be at least 5 characters",
       },
       password: {
         required: true,
         type: "text",
         minLength: 5,
-        message: "Не менее 5 символов",
+        message: "Password must be at least 5 characters",
+      },
+      offer: {
+        required: true,
+        type: "boolean",
+        message: "You must accept the terms",
       },
     };
-
-    const validation = validateInputs(value, rules);
+    const v = validateInputs(form, rules);
     const newErrors = {
-      errorNameMsg: validation.name || "",
-      errorSurnameMsg: validation.surname || "",
-      errorLoginMsg: validation.login || "",
-      errorPasswordMsg: validation.password || "",
-      errorOfferMsg: validation.offer || "",
+      name: v.name || "",
+      surname: v.surname || "",
+      login: v.login || "",
+      password: v.password || "",
+      offer: v.offer || "",
+      captcha: captchaToken ? "" : "Please complete the captcha",
     };
     if (
-      newErrors.errorNameMsg ||
-      newErrors.errorSurnameMsg ||
-      newErrors.errorLoginMsg ||
-      newErrors.errorPasswordMsg ||
-      newErrors.errorOfferMsg
+      newErrors.name ||
+      newErrors.surname ||
+      newErrors.login ||
+      newErrors.password ||
+      newErrors.offer ||
+      newErrors.captcha
     ) {
-      setError(newErrors);
+      setErrors(newErrors);
       return;
     }
-
     try {
       showLoader();
-      const response = await registerUser({
-        name: value.name,
-        surname: value.surname,
-        login: value.login,
-        password: value.password,
-        offer: value.offer,
+      const resp = await registerUser({
+        name: form.name,
+        surname: form.surname,
+        login: form.login,
+        password: form.password,
+        offer: form.offer,
         captcha: captchaToken,
       });
-
-      if (response.status === 201 || response.status === 200) {
+      if (resp.status === 200 || resp.status === 201) {
         await checkAuth();
         return;
       }
-
-      if (response.response?.status === 400) {
-        const backendErrors = response.response.data.errors || {};
-        setError((p) => ({
-          ...p,
-          errorNameMsg: backendErrors.name || "",
-          errorSurnameMsg: backendErrors.surname || "",
-          errorLoginMsg: backendErrors.login || "",
-          errorPasswordMsg: backendErrors.password || "",
-          errorOfferMsg: backendErrors.offer || "",
+      if (resp.response?.status === 400) {
+        const be = resp.response.data.errors || {};
+        setErrors((e) => ({
+          ...e,
+          name: be.name || "",
+          surname: be.surname || "",
+          login: be.login || "",
+          password: be.password || "",
+          offer: be.offer || "",
+        }));
+      } else {
+        setErrors((e) => ({
+          ...e,
+          login: "Server error occurred. Please try again.",
         }));
       }
     } catch {
-      setError({
-        ...defaultErrorData,
-        errorLoginMsg: "Ошибка сети",
-        errorPasswordMsg: "Ошибка сети",
-      });
+      setErrors((e) => ({
+        ...e,
+        login: "Network error occurred. Please try again.",
+      }));
     } finally {
       hideLoader();
     }
@@ -158,29 +149,31 @@ function Registration({ changeAuthorizationState }) {
   return (
     <div className="flex flex-col justify-center items-center w-full h-full">
       <Modal>
-        <form onSubmit={handleSubmit} className="w-full">
-          <div className="flex space-x-4">
-            <div className="flex-1">
+        <form onSubmit={handleSubmit} className="w-full max-w-md">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
               <InputLabel text="Name" />
               <Input
                 name="name"
                 type="text"
-                value={value.name}
+                placeholder="Enter your name"
+                value={form.name}
                 setValue={handleChange}
-                className={`mt-2 ${error.errorNameMsg && "border-red-600 border-2 rounded"}`}
+                className={`mt-2 ${errors.name ? "border-red-600 border-2 rounded" : ""}`}
               />
-              <span className="text-red-500">{error.errorNameMsg}</span>
+              {errors.name && <p className="text-red-500 mt-1">{errors.name}</p>}
             </div>
-            <div className="flex-1">
+            <div>
               <InputLabel text="Surname" />
               <Input
                 name="surname"
                 type="text"
-                value={value.surname}
+                placeholder="Enter your surname"
+                value={form.surname}
                 setValue={handleChange}
-                className={`mt-2 ${error.errorSurnameMsg && "border-red-600 border-2 rounded"}`}
+                className={`mt-2 ${errors.surname ? "border-red-600 border-2 rounded" : ""}`}
               />
-              <span className="text-red-500">{error.errorSurnameMsg}</span>
+              {errors.surname && <p className="text-red-500 mt-1">{errors.surname}</p>}
             </div>
           </div>
 
@@ -188,47 +181,49 @@ function Registration({ changeAuthorizationState }) {
           <Input
             name="login"
             type="text"
-            value={value.login}
+            placeholder="Enter your login"
+            value={form.login}
             setValue={handleChange}
-            className={`mt-2 ${error.errorLoginMsg && "border-red-600 border-2 rounded"}`}
+            className={`mt-2 ${errors.login ? "border-red-600 border-2 rounded" : ""}`}
           />
-          <span className="text-red-500">{error.errorLoginMsg}</span>
+          {errors.login && <p className="text-red-500 mt-1">{errors.login}</p>}
 
           <div className="mt-4 flex justify-between items-center">
-            <InputLabel text="Password" />
-            <Button type="button" onClick={handleGenerate}>
-              Generate
-            </Button>
+            <InputLabel text="Password"/>
+            <div className="hover-anim" onClick={handleGenerate}>
+              <InputLabel text={'Generate'}/>
+            </div>
           </div>
           <Input
             name="password"
             type="password"
-            value={value.password}
+            placeholder="Enter your password"
+            value={form.password}
             setValue={handleChange}
-            className={`mt-2 ${error.errorPasswordMsg && "border-red-600 border-2 rounded"}`}
+            className={`mt-2 ${errors.password ? "border-red-600 border-2 rounded" : ""}`}
           />
-          <span className="text-red-500">{error.errorPasswordMsg}</span>
+          {errors.password && <p className="text-red-500 mt-1">{errors.password}</p>}
 
           <label className="mt-4 flex items-center">
             <input
               type="checkbox"
               name="offer"
-              checked={value.offer}
+              checked={form.offer}
               onChange={handleChange}
             />
             <span className="ml-2">I agree to the terms</span>
           </label>
-          <span className="text-red-500">{error.errorOfferMsg}</span>
+          {errors.offer && <p className="text-red-500 mt-1">{errors.offer}</p>}
 
           <div className="mt-4">
             <Turnstile
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-              onVerify={(t) => setCaptchaToken(t)}
-              options={{ theme: "auto" }}
+              onVerify={setCaptchaToken}
             />
           </div>
+          {errors.captcha && <p className="text-red-500 mt-1">{errors.captcha}</p>}
 
-          <div className="mt-6 cursor-pointer hover:scale-105 transition">
+          <div className="mt-6 hover:scale-105 transition">
             <Button type="submit" className="w-full">
               Create account
             </Button>
@@ -236,12 +231,13 @@ function Registration({ changeAuthorizationState }) {
 
           <div className="mt-4 text-center">
             Already have an account?{" "}
-            <span
+            <button
+              type="button"
               onClick={changeAuthorizationState}
-              className="text-blue-500 hover:underline cursor-pointer"
+              className="text-blue-500 hover:underline"
             >
               Sign in
-            </span>
+            </button>
           </div>
         </form>
       </Modal>
@@ -252,5 +248,3 @@ function Registration({ changeAuthorizationState }) {
 Registration.propTypes = {
   changeAuthorizationState: PropTypes.func.isRequired,
 };
-
-export default Registration;
