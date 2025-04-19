@@ -202,7 +202,7 @@ export default function Registration({ changeAuthorizationState }) {
 
           <div className="mt-4 flex flex-col justify-center items-center">
             <Turnstile
-              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              siteKey="0x4AAAAAABOjyDX12nSDcMwh"
               onSuccess={handleCaptcha}
               onError={() => setErrors(e => ({
                 ...e,

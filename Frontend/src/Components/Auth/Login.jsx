@@ -105,7 +105,7 @@ export default function Login({ changeAuthorizationState }) {
 
           <div className="mt-4 flex flex-col justify-center items-center">
             <Turnstile
-              siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
+              siteKey="0x4AAAAAABOjyDX12nSDcMwh"
               onVerify={setCaptchaToken}
               options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
