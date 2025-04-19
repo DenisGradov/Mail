@@ -12,10 +12,11 @@ import Input from "../Ui/Input.jsx";
 import Button from "../Ui/Button.jsx";
 import { Turnstile } from "@marsidev/react-turnstile";
 import PropTypes from "prop-types";
+import {registerUser} from "../../Api/Auth.js";
 
 export default function Registration({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
-  const { registerUser, checkAuth } = useUserStore();
+  const {  checkAuth } = useUserStore();
 
   const [form, setForm] = useState({
     name: "",
