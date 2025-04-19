@@ -34,22 +34,21 @@ router.post("/send", express.json(), async (req, res) => {
     console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
 
     const transporter = createTransport({
-      direct: true,
-      host: "mail.stenford.monster",
-      port: 25,
-      secure: false,
-      tls: { rejectUnauthorized: false },
+      direct: true,              // MX‑lookup и отправка напрямую
+      name: 'stenford.monster',  // EHLO‑имя вашего домена
       logger: true,
       debug: true,
-      greetingTimeout: 5000,    // ждём приветствия не более 5 сек
-      connectionTimeout: 5000,  // на установление TCP‑соединения
-      socketTimeout: 5000,      // общее время на ответ
-      name: 'stenford.monster'
+      greetingTimeout: 5000,
+      connectionTimeout: 5000,
+      socketTimeout: 5000,
     });
+
+    await transporter.verify();
+    console.log("✔️ [SMTP] Verify OK — готов к отправке");
 
     const info = await transporter.sendMail({
       from: '"Maddison Foo Koch 👻" <maddison53@stenford.monster>',
-      to: "varonapika@gmail.com",
+      to: recipients,
       subject,
       text,
     });
