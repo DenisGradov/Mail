@@ -5,7 +5,7 @@ const { getUserByToken } = require('../DataBase/functions/getUserByToken');
 const { mailEmitter }    = require('../services/mailEmitter');
 const {setEmailFavorite} = require("../DataBase/functions/setEmailFavorite");
 const {updateUserEmails, getUserByEmail} = require("../DataBase/functions/updateUserEmails");
-const {createTransport} = require("nodemailer");
+const {createTransport,} = require("nodemailer");
 
 
 
@@ -29,24 +29,10 @@ router.post("/send", express.json(), async (req, res) => {
     return res.status(400).json({ error: "Invalid email format" });
   }
 
-  // 3) проверь MX-запись домена
-  const domain = recipients.split("@")[1];
-  try {
-    console.log(`🔍 [send] Проверяем MX для домена ${domain}...`);
-    const mx = await dns.resolveMx(domain);
-    if (!mx || mx.length === 0) {
-      console.warn(`❌ [send] Нет MX-записей для ${domain}`);
-      return res.status(400).json({ error: "Domain does not accept mail" });
-    }
-  } catch (err) {
-    console.error(`❌ [send] Ошибка при DNS-запросе для ${domain}:`, err);
-    return res.status(400).json({ error: "Cannot resolve mail server for domain" });
-  }
 
-  // 4) отправка через SMTP
   try {
     console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
-    const transporter = nodemailer.createTransport({
+    const transporter = createTransport({
       host: process.env.SMTP_HOST || "localhost",
       port: process.env.SMTP_PORT || 2525,
       secure: false,
