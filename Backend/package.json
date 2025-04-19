@@ -18,6 +18,7 @@
     "express": "^5.1.0",
     "mailparser": "^3.7.2",
     "nodemailer": "^6.10.1",
+    "nodemailer-direct-transport": "^3.3.2",
     "smtp-server": "^3.13.6",
     "sqlite3": "^5.1.7"
   },

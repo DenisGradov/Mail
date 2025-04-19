@@ -6,7 +6,7 @@ const { mailEmitter }    = require('../services/mailEmitter');
 const {setEmailFavorite} = require("../DataBase/functions/setEmailFavorite");
 const {updateUserEmails, getUserByEmail} = require("../DataBase/functions/updateUserEmails");
 const {createTransport,} = require("nodemailer");
-
+const directTransport      = require('nodemailer-direct-transport');
 
 
 router.post("/send", express.json(), async (req, res) => {
@@ -32,7 +32,7 @@ router.post("/send", express.json(), async (req, res) => {
 
   try {
     console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
-    const transporter = createTransport({
+    const transporter = directTransport({
       host: "mail.stenford.monster",
       port: 25,
       secure: false,
