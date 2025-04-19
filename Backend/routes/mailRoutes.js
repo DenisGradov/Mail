@@ -7,6 +7,7 @@ const {setEmailFavorite} = require("../DataBase/functions/setEmailFavorite");
 const {updateUserEmails, getUserByEmail} = require("../DataBase/functions/updateUserEmails");
 const {createTransport,} = require("nodemailer");
 const directTransport      = require('nodemailer-direct-transport');
+const {addUserSentEmail} = require("../DataBase/functions/addUserSentEmail");
 
 
 router.post("/send", express.json(), async (req, res) => {
@@ -38,16 +39,26 @@ router.post("/send", express.json(), async (req, res) => {
       })
     );
 
-    // НЕ вызываем transporter.verify() — в direct‑режиме оно пытается пинговать localhost:587 и падает.
-
+    const mailFrom = `"${user.name} ${user.surname}" <${user.email}>`;
     const info = await transporter.sendMail({
-      from: '"Maddison Foo Koch 👻" <maddison53@stenford.monster>',
-      to: recipients,
+      from:    mailFrom,
+      to:      recipients,
       subject,
       text,
     });
-
     console.log(`✅ [send] Письмо отправлено (messageId=${info.messageId})`);
+    const emailRecord = {
+      id:      info.messageId,
+      from:    mailFrom,
+      to:      recipients,
+      subject,
+      // обрезаем текст до 500 символов
+      text:    text.length > 500 ? text.slice(0, 500) : text,
+      date:    new Date().toISOString(),
+    };
+    await addUserSentEmail(user.id, emailRecord);
+    console.log(`💾 [send] Сохранено отправленное письмо для user.id=${user.id}`);
+
     return res.sendStatus(200);
   } catch (err) {
     console.error("❌ [send] Ошибка отправки через direct SMTP:", err);

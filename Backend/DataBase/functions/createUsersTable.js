@@ -13,6 +13,7 @@ function initializeDB() {
       auth TEXT,
       logs TEXT,
       emails TEXT,
+      sent_emails TEXT,
       lastAsset TEXT,
       blocked INTEGER
     )
