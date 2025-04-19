@@ -53,47 +53,30 @@ export default function Registration({ changeAuthorizationState }) {
     }
   };
 
+  const handleCaptcha = (token) => {
+    setCaptchaToken(token);
+    if (errors.captcha) {
+      setErrors((e) => ({ ...e, captcha: "" }));
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rules = {
-      name: {
-        required: true,
-        type: "text",
-        minLength: 2,
-        message: "Name must be at least 2 characters",
-      },
-      surname: {
-        required: true,
-        type: "text",
-        minLength: 2,
-        message: "Surname must be at least 2 characters",
-      },
-      login: {
-        required: true,
-        type: "text",
-        minLength: 5,
-        message: "Login must be at least 5 characters",
-      },
-      password: {
-        required: true,
-        type: "text",
-        minLength: 5,
-        message: "Password must be at least 5 characters",
-      },
-      offer: {
-        required: true,
-        type: "boolean",
-        message: "You must accept the terms",
-      },
+      name:     { required: true, type: "text",    minLength: 2, message: "Name must be at least 2 characters" },
+      surname:  { required: true, type: "text",    minLength: 2, message: "Surname must be at least 2 characters" },
+      login:    { required: true, type: "text",    minLength: 5, message: "Login must be at least 5 characters" },
+      password: { required: true, type: "text",    minLength: 5, message: "Password must be at least 5 characters" },
+      offer:    { required: true, type: "boolean",                 message: "You must accept the terms" },
     };
     const v = validateInputs(form, rules);
     const newErrors = {
-      name: v.name || "",
-      surname: v.surname || "",
-      login: v.login || "",
+      name:     v.name     || "",
+      surname:  v.surname  || "",
+      login:    v.login    || "",
       password: v.password || "",
-      offer: v.offer || "",
-      captcha: captchaToken ? "" : "Please complete the captcha",
+      offer:    v.offer    || "",
+      captcha:  captchaToken ? "" : "Please complete the captcha",
     };
     if (
       newErrors.name ||
@@ -109,12 +92,12 @@ export default function Registration({ changeAuthorizationState }) {
     try {
       showLoader();
       const resp = await registerUser({
-        name: form.name,
-        surname: form.surname,
-        login: form.login,
+        name:     form.name,
+        surname:  form.surname,
+        login:    form.login,
         password: form.password,
-        offer: form.offer,
-        captcha: captchaToken,
+        offer:    form.offer,
+        captcha:  captchaToken,
       });
       if (resp.status === 200 || resp.status === 201) {
         await checkAuth();
@@ -124,11 +107,11 @@ export default function Registration({ changeAuthorizationState }) {
         const be = resp.response.data.errors || {};
         setErrors((e) => ({
           ...e,
-          name: be.name || "",
-          surname: be.surname || "",
-          login: be.login || "",
+          name:     be.name     || "",
+          surname:  be.surname  || "",
+          login:    be.login    || "",
           password: be.password || "",
-          offer: be.offer || "",
+          offer:    be.offer    || "",
         }));
       } else {
         setErrors((e) => ({
@@ -219,7 +202,7 @@ export default function Registration({ changeAuthorizationState }) {
           <div className="mt-4 flex flex-col justify-center items-center">
             <Turnstile
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-              onVerify={setCaptchaToken}
+              onVerify={handleCaptcha}
               options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
           </div>
