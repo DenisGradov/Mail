@@ -3,7 +3,7 @@ import InputLabel from "./InputLabel.jsx";
 import Button from "./Button.jsx";
 import RoundButton from "./RoundButton.jsx";
 import PropTypes from "prop-types";
-import { sendEmail } from "../../api/mail.js";
+import { sendEmail } from "../../Api/Mail.js";
 
 function SendEmail({ handleNewMail }) {
   const [form, setForm] = useState({ recipients: "", subject: "", text: "" });
