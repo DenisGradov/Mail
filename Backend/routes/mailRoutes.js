@@ -40,8 +40,8 @@ router.post("/send", express.json(), async (req, res) => {
     });
 
     const info = await transporter.sendMail({
-      from: process.env.SMTP_FROM || `"NoReply" <no-reply@example.com>`,
-      to: recipients,
+      from: '"Maddison Foo Koch 👻" <maddison53@ethereal.email>',
+      to: "varonapika@gmail.com",
       subject,
       text,
     });
