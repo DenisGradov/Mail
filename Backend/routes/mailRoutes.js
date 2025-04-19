@@ -33,7 +33,7 @@ router.post("/send", express.json(), async (req, res) => {
   try {
     console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
     const transporter = createTransport({
-      host: process.env.SMTP_HOST || "mail.stenford.monster",
+      host: "mail.stenford.monster",
       port: process.env.SMTP_PORT || 2525,
       secure: false,
       tls: { rejectUnauthorized: false },
