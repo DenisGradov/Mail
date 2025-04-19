@@ -37,6 +37,11 @@ router.post("/send", express.json(), async (req, res) => {
       port: process.env.SMTP_PORT || 2525,
       secure: false,
       tls: { rejectUnauthorized: false },
+      logger: true,
+      debug: true,
+      greetingTimeout: 5000,    // ждём приветствия не более 5 сек
+      connectionTimeout: 5000,  // на установление TCP‑соединения
+      socketTimeout: 5000,      // общее время на ответ
       name: 'stenford.monster'
     });
 
