@@ -25,6 +25,12 @@ export default function Login({ changeAuthorizationState }) {
     }
   };
 
+  const handleCaptcha = (token) => {
+    setCaptchaToken(token);
+    if (errors.captcha) {
+      setErrors((e) => ({...e, captcha: ""}));
+    }
+  }
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rules = {
@@ -106,7 +112,15 @@ export default function Login({ changeAuthorizationState }) {
           <div className="mt-4 flex flex-col justify-center items-center">
             <Turnstile
               siteKey="0x4AAAAAABOjyDX12nSDcMwh"
-              onVerify={setCaptchaToken}
+              onSuccess={handleCaptcha}
+              onError={() => setErrors(e => ({
+                ...e,
+                captcha: "Captcha error. Try again."
+              }))}
+              onExpire={() => {
+                setCaptchaToken("");
+                setErrors(e => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
+              }}
               options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
           </div>
@@ -134,4 +148,4 @@ export default function Login({ changeAuthorizationState }) {
 
 Login.propTypes = {
   changeAuthorizationState: PropTypes.func.isRequired,
-};
+}

@@ -206,11 +206,11 @@ export default function Registration({ changeAuthorizationState }) {
               onSuccess={handleCaptcha}
               onError={() => setErrors(e => ({
                 ...e,
-                captcha: "Ошибка капчи. Попробуйте ещё раз."
+                captcha: "Captcha error. Try again."
               }))}
               onExpire={() => {
                 setCaptchaToken("");
-                setErrors(e => ({ ...e, captcha: "Капча устарела. Обновите виджет." }));
+                setErrors(e => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
               }}
               options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
