@@ -47,8 +47,8 @@ export const useUserStore = create(
         set({ theme: currentTheme==="theme-black"?"theme-white":"theme-black" });
       },
 
-      loginUser: async (username, password, remember = false) => {
-        const response = await apiLoginUser(username, password, remember);
+      loginUser: async (username, password, remember = false, captcha) => {
+        const response = await apiLoginUser(username, password, remember, captcha);
         if (response && response.status === 200) {
           set({
             auth: { isAuthenticated: true },
