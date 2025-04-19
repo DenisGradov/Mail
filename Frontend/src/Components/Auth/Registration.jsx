@@ -202,9 +202,18 @@ export default function Registration({ changeAuthorizationState }) {
           <div className="mt-4 flex flex-col justify-center items-center">
             <Turnstile
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
-              onVerify={handleCaptcha}
+              onSuccess={handleCaptcha}
+              onError={() => setErrors(e => ({
+                ...e,
+                captcha: "Ошибка капчи. Попробуйте ещё раз."
+              }))}
+              onExpire={() => {
+                setCaptchaToken("");
+                setErrors(e => ({ ...e, captcha: "Капча устарела. Обновите виджет." }));
+              }}
               options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
+
           </div>
           {errors.captcha && <p className="text-red-500 mt-1">{errors.captcha}</p>}
 
