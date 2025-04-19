@@ -146,6 +146,7 @@ export default function Registration({ changeAuthorizationState }) {
     }
   };
 
+  const { theme } = useUserStore();
   return (
     <div className="flex flex-col justify-center items-center w-full h-full">
       <Modal>
@@ -215,10 +216,11 @@ export default function Registration({ changeAuthorizationState }) {
           </label>
           {errors.offer && <p className="text-red-500 mt-1">{errors.offer}</p>}
 
-          <div className="mt-4">
+          <div className="mt-4 flex flex-col justify-center items-center">
             <Turnstile
               siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY}
               onVerify={setCaptchaToken}
+              options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
           </div>
           {errors.captcha && <p className="text-red-500 mt-1">{errors.captcha}</p>}
