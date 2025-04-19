@@ -14,12 +14,10 @@ services:
 
 
 
-  frontend:
+  nginx:
     build:
-      context: .                 # теперь контекст = корень вашего репо
-      dockerfile: Frontend/Dockerfile
-    env_file:
-      - .env.frontend            # подтягиваем переменные в рантайм (необязательно, но по аналогии)
+      context: .                 # контекст — корень репо, где лежит Frontend/
+      dockerfile: ./nginx/Dockerfile
     ports:
       - "5042:80"
     depends_on:
