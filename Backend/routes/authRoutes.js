@@ -75,7 +75,8 @@ router.post("/login", async (req, res) => {
     return res.status(400).json({ error: "Username and password required" });
   }
   try {
-    const result = await dbLogin(username, password);
+    const result = await loginUser(username, password);
+
     if (!result) return res.status(401).json({ error: "Invalid login or password" });
 
     const { token, user } = result;
