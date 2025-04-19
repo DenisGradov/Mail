@@ -31,6 +31,7 @@ export default function Login({ changeAuthorizationState }) {
       setErrors((e) => ({...e, captcha: ""}));
     }
   }
+  const CAPTCHA_SKIP = import.meta.env.VITE_CAPTCHA_SKIP === 'true';
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rules = {
@@ -41,7 +42,7 @@ export default function Login({ changeAuthorizationState }) {
     const newErrors = {
       login:    v.login    || "",
       password: v.password || "",
-      captcha:  captchaToken ? "" : "Please complete the captcha",
+      captcha:  CAPTCHA_SKIP ? "" : captchaToken ? "" : "Please complete the captcha",
     };
     if (newErrors.login || newErrors.password || newErrors.captcha) {
       setErrors(newErrors);
@@ -67,6 +68,7 @@ export default function Login({ changeAuthorizationState }) {
       hideLoader();
     }
   };
+
 
   const { theme } = useUserStore();
   return (
@@ -124,7 +126,7 @@ export default function Login({ changeAuthorizationState }) {
               options={{ theme: theme === "theme-black" ? "dark" : "light" }}
             />
           </div>
-          {errors.captcha && <p className="text-red-500 mt-1">{errors.captcha}</p>}
+          {errors.captcha && <p className="flex items-center justify-center text-red-500 mt-1">{errors.captcha}</p>}
 
           <div className="mt-6 hover:scale-105 transition">
             <Button type="submit" className="w-full">Sign in</Button>

@@ -61,6 +61,7 @@ export default function Registration({ changeAuthorizationState }) {
     }
   };
 
+  const CAPTCHA_SKIP = import.meta.env.VITE_CAPTCHA_SKIP === 'true';
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rules = {
@@ -77,7 +78,7 @@ export default function Registration({ changeAuthorizationState }) {
       login:    v.login    || "",
       password: v.password || "",
       offer:    v.offer    || "",
-      captcha:  captchaToken ? "" : "Please complete the captcha",
+      captcha:  CAPTCHA_SKIP ? "" : captchaToken ? "" : "Please complete the captcha",
     };
     if (
       newErrors.name ||
@@ -216,7 +217,7 @@ export default function Registration({ changeAuthorizationState }) {
             />
 
           </div>
-          {errors.captcha && <p className="text-red-500 mt-1">{errors.captcha}</p>}
+          {errors.captcha && <p className="flex items-center justify-center text-red-500 mt-1">{errors.captcha}</p>}
 
           <div className="mt-6 hover:scale-105 transition">
             <Button type="submit" className="w-full">

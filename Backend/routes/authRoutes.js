@@ -8,6 +8,9 @@ const {loginUser} = require("../DataBase/functions/loginUser");
 const {getUserByToken} = require("../DataBase/functions/getUserByToken");
 const domain = process.env.DEFAULT_MAIL;
 
+
+const CAPTCHA_SKIP = process.env.VITE_CAPTCHA_SKIP === 'true';
+
 router.post('/logout', (req, res) => {
   res.clearCookie('auth_token', {
     httpOnly: true,
@@ -67,7 +70,7 @@ async function verifyTurnstile(token, remoteIp) {
 router.post("/login", async (req, res) => {
   const { username, password, remember, captcha } = req.body;
   // 1) проверка капчи
-  if (!captcha || !(await verifyTurnstile(captcha, req.ip))) {
+  if (!CAPTCHA_SKIP && (!captcha || !(await verifyTurnstile(captcha, req.ip)))) {
     return res.status(400).json({ error: "Captcha verification failed" });
   }
   // 2) валидация
@@ -104,7 +107,7 @@ router.post("/login", async (req, res) => {
 router.post("/register", async (req, res) => {
   const { login, password, name, surname, offer, captcha } = req.body;
   // 1) проверка капчи
-  if (!captcha || !(await verifyTurnstile(captcha, req.ip))) {
+  if (!CAPTCHA_SKIP && (!captcha || !(await verifyTurnstile(captcha, req.ip)))) {
     return res.status(400).json({ errors: { captcha: "Пожалуйста, подтвердите, что вы не робот" } });
   }
   // 2) базовая валидация
