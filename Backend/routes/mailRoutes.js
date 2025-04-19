@@ -10,23 +10,11 @@ const {createTransport} = require("nodemailer");
 
 
 router.post("/send", express.json(), async (req, res) => {
-  console.log("📬 [send] Запрос на отправку письма");
-
-  const token = req.cookies?.auth_token;
-  if (!token) {
-    console.warn("⚠️ [send] Нет токена");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
-
-  const sender = await getUserByToken(token);
-  if (!sender) {
-    console.warn("⚠️ [send] Неверный токен");
-    return res.status(401).json({ error: "Unauthorized" });
-  }
+  console.log("📬 [send] Получен запрос на отправку письма");
 
   const { recipients, subject, text } = req.body;
 
-  // Backend-валидация
+  // 1) базовая валидация
   if (!recipients) return res.status(400).json({ error: "Recipient is required" });
   if (recipients.length < 3) return res.status(400).json({ error: "Recipient must be at least 3 characters" });
   if (!subject) return res.status(400).json({ error: "Subject is required" });
@@ -34,46 +22,49 @@ router.post("/send", express.json(), async (req, res) => {
   if (!text) return res.status(400).json({ error: "Message text is required" });
   if (text.length < 3) return res.status(400).json({ error: "Message must be at least 3 characters" });
 
+  // 2) проверь, валиден ли email синтаксически
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  if (!emailRegex.test(recipients)) {
+    console.warn(`⚠️ [send] Неправильный формат адреса ${recipients}`);
+    return res.status(400).json({ error: "Invalid email format" });
+  }
 
+  // 3) проверь MX-запись домена
+  const domain = recipients.split("@")[1];
   try {
-    console.log("🚀 [send] Отправляем через SMTP...");
-    const transporter = createTransport({
-      host: "localhost",
+    console.log(`🔍 [send] Проверяем MX для домена ${domain}...`);
+    const mx = await dns.resolveMx(domain);
+    if (!mx || mx.length === 0) {
+      console.warn(`❌ [send] Нет MX-записей для ${domain}`);
+      return res.status(400).json({ error: "Domain does not accept mail" });
+    }
+  } catch (err) {
+    console.error(`❌ [send] Ошибка при DNS-запросе для ${domain}:`, err);
+    return res.status(400).json({ error: "Cannot resolve mail server for domain" });
+  }
+
+  // 4) отправка через SMTP
+  try {
+    console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST || "localhost",
       port: process.env.SMTP_PORT || 2525,
       secure: false,
       tls: { rejectUnauthorized: false },
     });
 
     const info = await transporter.sendMail({
-      from: `"${sender.name}" <${sender.email}>`,
+      from: process.env.SMTP_FROM || `"NoReply" <no-reply@example.com>`,
       to: recipients,
       subject,
       text,
     });
 
-    console.log(`✅ [send] Message sent: ${info.messageId}`);
-
-    // Сохраняем в JSON‑поле и пушим SSE
-    const emailObj = {
-      id: info.messageId,
-      favorite: false,
-      viewed: false,
-      from: sender.email,
-      to: recipients,
-      subject,
-      date: new Date().toISOString(),
-      contentType: "text/plain",
-      text,
-      html: "",
-      attachments: [],
-    };
-    await updateUserEmails(recipientUser.id, emailObj);
-    mailEmitter.emit("newEmail", emailObj);
-
-    res.sendStatus(200);
+    console.log(`✅ [send] Письмо отправлено (messageId=${info.messageId})`);
+    return res.sendStatus(200);
   } catch (err) {
-    console.error("❌ [send] Ошибка отправки:", err);
-    res.status(500).json({ error: "Server error. Try again later." });
+    console.error("❌ [send] Ошибка отправки через SMTP:", err);
+    return res.status(500).json({ error: "Server error. Try again later." });
   }
 });
 
