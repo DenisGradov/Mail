@@ -19,7 +19,7 @@ services:
       context: .                 # контекст — корень репо, где лежит Frontend/
       dockerfile: ./nginx/Dockerfile
     ports:
-      - "5042:80"
+      - "80:80"
     depends_on:
       - backend
     restart: unless-stopped
