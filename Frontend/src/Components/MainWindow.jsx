@@ -30,6 +30,7 @@ import {
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
 import {getDate, getShortText, stripHtml} from "../Utils/Main.js";
+import SendEmail from "./Ui/SendEmail.jsx";
 
 export default function MainWindow() {
 
@@ -43,6 +44,12 @@ export default function MainWindow() {
   const [selectedMails, setSelectedMails] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
+
+  const [newMail, setNewMail] = useState(false);
+  const handleNewMail = () => {
+     setNewMail((prev)=> !prev);
+  }
+
 
   const toggleFavorite = useMailStore(state => state.toggleFavorite);
 
@@ -184,7 +191,7 @@ export default function MainWindow() {
             </div>
           </div>
           <Line className="my-[24px]" />
-          <Button onClick={() => {}} className={`${!isMenuOpen && "w-[50px]"} font-bold`}>
+          <Button onClick={() => {handleNewMail()}} className={`${!isMenuOpen && "w-[50px]"} font-bold`}>
             {isMenuOpen ? "New Message" : <FaRegPaperPlane className="text-[25px]" />}
           </Button>
           <Line className="mt-[24px] mb-[26.5px]" />
@@ -351,18 +358,24 @@ export default function MainWindow() {
           ))}
         </div>
       </div>
-
-      {wantLogout && (
-        <div className="absolute inset-0 bg-bg-main z-40">
-          <Clarification
-            title="Logout"
-            text="Are you sure you want to log out of your account?"
-            buttonText="Exit"
-            onClick={logoutUser}
-            backButtonClick={handleWantLogout}
-          />
+      {newMail && (
+        <div className="absolute inset-0  z-40 w-full h-full">
+          <div className="w-full h-full bg-bg-main/60 backdrop-blur-sm"></div>
+          <SendEmail handleNewMail={handleNewMail} />
         </div>
-      )}
-    </div>
-  );
-}
+
+          )}
+          {wantLogout && (
+            <div className="absolute inset-0 bg-bg-main z-40">
+              <Clarification
+                title="Logout"
+                text="Are you sure you want to log out of your account?"
+                buttonText="Exit"
+                onClick={logoutUser}
+                backButtonClick={handleWantLogout}
+              />
+            </div>
+          )}
+        </div>
+      );
+      }

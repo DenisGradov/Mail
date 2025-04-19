@@ -2,6 +2,24 @@ import axios from "axios";
 
 const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
+
+
+export const sendEmail = async ({ recipients, subject, text }) => {
+  try {
+    const res = await axios.post(
+      `${backendUrl}/mail/send`,
+      { recipients, subject, text },
+      { withCredentials: true }
+    );
+    return res.data;
+  } catch (err) {
+    if (err.response?.data?.error) {
+      throw new Error(err.response.data.error);
+    }
+    throw new Error("Network error. Please try again.");
+  }
+};
+
 /**
  * Пакетная загрузка писем
  * @param {number} limit — сколько взять

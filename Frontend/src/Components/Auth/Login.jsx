@@ -117,7 +117,7 @@ export default function Login({ changeAuthorizationState }) {
               onSuccess={handleCaptcha}
               onError={() => setErrors(e => ({
                 ...e,
-                captcha: "Captcha error. Try again."
+                captcha: !CAPTCHA_SKIP&&"Captcha error. Try again."
               }))}
               onExpire={() => {
                 setCaptchaToken("");
