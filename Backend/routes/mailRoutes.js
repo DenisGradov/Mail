@@ -32,7 +32,9 @@ router.post("/send", express.json(), async (req, res) => {
 
   try {
     console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
-    const transporter = directTransport({
+
+    const transporter = createTransport({
+      direct: true,
       host: "mail.stenford.monster",
       port: 25,
       secure: false,
