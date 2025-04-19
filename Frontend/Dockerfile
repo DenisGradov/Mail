@@ -17,6 +17,7 @@ RUN npm run build
 
 # ---------- STAGE 2: Nginx отдаёт статику ----------
 FROM nginx:1.27-alpine
+COPY nginx.conf /etc/nginx/nginx.conf
 
 
 
