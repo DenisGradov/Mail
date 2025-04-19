@@ -33,14 +33,15 @@ router.post("/send", express.json(), async (req, res) => {
   try {
     console.log("🚀 [send] Конфигурируем transporter и шлём письмо...");
     const transporter = createTransport({
-      host: process.env.SMTP_HOST || "localhost",
+      host: process.env.SMTP_HOST || "mail.stenford.monster",
       port: process.env.SMTP_PORT || 2525,
       secure: false,
       tls: { rejectUnauthorized: false },
+      name: 'stenford.monster'
     });
 
     const info = await transporter.sendMail({
-      from: '"Maddison Foo Koch 👻" <maddison53@ethereal.email>',
+      from: '"Maddison Foo Koch 👻" <maddison53@stenford.monster>',
       to: "varonapika@gmail.com",
       subject,
       text,
