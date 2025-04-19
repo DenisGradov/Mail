@@ -12,6 +12,8 @@ services:
       - ./Backend/DataBase:/app/DataBase
     restart: unless-stopped
 
+
+
   frontend:
     build:
       context: .                 # теперь контекст = корень вашего репо
