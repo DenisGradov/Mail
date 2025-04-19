@@ -34,12 +34,6 @@ router.post("/send", express.json(), async (req, res) => {
   if (!text) return res.status(400).json({ error: "Message text is required" });
   if (text.length < 3) return res.status(400).json({ error: "Message must be at least 3 characters" });
 
-  console.log(`🔍 [send] Проверяем получателя ${recipients}`);
-  const recipientUser = await getUserByEmail(recipients);
-  if (!recipientUser) {
-    console.warn(`❌ [send] Получатель ${recipients} не найден`);
-    return res.status(400).json({ error: "Recipient does not exist" });
-  }
 
   try {
     console.log("🚀 [send] Отправляем через SMTP...");
