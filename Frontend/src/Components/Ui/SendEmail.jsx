@@ -47,6 +47,7 @@ function SendEmail({ handleNewMail }) {
       });
       alert("Message sent successfully");
       setForm({ recipients: "", subject: "", text: "" });
+      handleNewMail()
     } catch (err) {
       console.error("SendEmail error:", err);
       setErrors((e) => ({ ...e, recipients: err.message }));

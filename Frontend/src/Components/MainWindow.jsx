@@ -103,7 +103,6 @@ export default function MainWindow() {
     const combined = (from || "") + (subject || "") + (text || stripHtml(html));
     return combined.toLowerCase().includes(q);
   });
-
   const sortedMails = [...filteredMails].sort((a, b) => {
     switch (sortType) {
       case "newest":
@@ -317,17 +316,18 @@ export default function MainWindow() {
                         <FaRegSquare className="text-icons text-[19px] hover-anim" />
                       </div>
                     )}
-                    <div className="ml-[10px] cursor-pointer">
+                    {activeTab!=="Sent" && <div className="ml-[10px] cursor-pointer">
                       {mail.favorite ? <FaBookmark
-                        onClick={() => toggleFavorite(mail.id, false)} className="text-yellow-400" /> : <FaRegBookmark
+                        onClick={() => toggleFavorite(mail.id, false)} className="text-yellow-400"/> : <FaRegBookmark
                         onClick={() => toggleFavorite(mail.id, true)}/>}
-                    </div>
+                    </div>}
                     <div className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} text-[17px] ml-[10px]`}>
-                      {getShortText(mail.from || "none", 30, false)}
+                      {getShortText(activeTab==="Sent"?mail.to : mail.from || "none", 30, false)}
                     </div>
                   </div>
                   <div className="flex items-center flex-[60%]">
-                    <div className={`${mail.viewed ? "opacity-0" : "opacity-100"} w-[8px] h-[8px] rounded-full bg-primary`} />
+                    {activeTab!=="Sent"&&<div
+                      className={`${mail.viewed ? "opacity-0" : "opacity-100"} w-[8px] h-[8px] rounded-full bg-primary`}/>}
                     <div className={`${mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"} mx-[10px] text-[17px]`}>
                       {getShortText(mail.subject || "Без темы", 30, false)}
                     </div>
