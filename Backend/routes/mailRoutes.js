@@ -82,32 +82,34 @@ router.post("/send", express.json(), async (req, res) => {
 
 
 router.get('/', async (req, res) => {
+  // 1) Авторизация
   const token = req.cookies?.auth_token;
   if (!token) return res.status(401).json({ error: 'Unauthorized' });
-
   const user = await getUserByToken(token);
-  if (!user) return res.status(401).json({ error: 'Unauthorized' });
+  if (!user) return res.status(401).json({ error: 'Invalid token' });
 
-  const limit  = Math.min(parseInt(req.query.limit) || 50, 200);
-  const cursor = req.query.cursor;
+  // 2) Парсим JSON‑поля
+  let inbox = [];
+  let sent  = [];
+  try { inbox = user.emails ? JSON.parse(user.emails) : []; }
+  catch { inbox = []; }
+  try { sent = user.sent_emails ? JSON.parse(user.sent_emails) : []; }
+  catch { sent = []; }
 
-  let arr = [];
-  try { arr = user.emails ? JSON.parse(user.emails) : []; }
-  catch { arr = []; }
+  // 3) Сортируем по дате (новейшие первыми) и режем до 50
+  inbox = inbox
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 50);
 
-  arr.sort((a, b) => new Date(b.date) - new Date(a.date));
+  sent = sent
+    .sort((a, b) => new Date(b.date) - new Date(a.date))
+    .slice(0, 50);
 
-  let start = 0;
-  if (cursor) {
-    const idx = arr.findIndex(m => m.id === cursor);
-    if (idx !== -1) start = idx + 1;
-  }
-
-  const items      = arr.slice(start, start + limit);
-  const nextCursor = items.length ? items[items.length - 1].id : null;
-  const hasMore    = start + items.length < arr.length;
-
-  res.json({ items, nextCursor, hasMore });
+  // 4) Отдаём две границы
+  res.json({
+    inbox,  // массив входящих писем (up to 50)
+    sent    // массив отправленных писем (up to 50)
+  });
 });
 
 /**

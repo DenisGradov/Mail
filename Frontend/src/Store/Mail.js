@@ -2,7 +2,8 @@ import { create } from "zustand";
 import {fetchEmails, setFavorite, subscribeNewEmails} from "../Api/Mail.js";
 
 export const useMailStore = create((set, get) => ({
-  mails: [],
+  inbox: [],    // входящие
+  sent: [],
   cursor: null,
   hasMore: true,
   loading: false,
@@ -11,25 +12,14 @@ export const useMailStore = create((set, get) => ({
   /**
    * Инициализация: загрузить первые письма + поднять SSE‑подписку
    */
-  init: async (pageSize = 50) => {
+  init: async () => {
     if (get().loading) return;
     set({ loading: true });
     try {
-      const { items, nextCursor, hasMore } = await fetchEmails(
-        pageSize,
-        null
-      );
-      set({ mails: items, cursor: nextCursor, hasMore });
-
-      // SSE: при каждом новом письме — добавляем в начало массива
-      const es = subscribeNewEmails((newMail) => {
-        set((state) => ({
-          mails: [newMail, ...state.mails],
-        }));
-      });
-      set({ sse: es });
+      const { inbox, sent } = await fetchEmails();
+      set({ inbox, sent });
     } catch (err) {
-      console.error("fetchEmails error:", err);
+      console.error("fetchMail error:", err);
     } finally {
       set({ loading: false });
     }
@@ -71,12 +61,15 @@ export const useMailStore = create((set, get) => ({
     try {
       const updated = await setFavorite(mailId, favorite);
       set(state => ({
-        mails: state.mails.map(m =>
+        inbox: state.inbox.map(m =>
           m.id === updated.id ? { ...m, favorite: updated.favorite } : m
-        )
+        ),
+        sent: state.sent.map(m =>
+          m.id === updated.id ? { ...m, favorite: updated.favorite } : m
+        ),
       }));
     } catch (err) {
-      console.error('toggleFavorite error:', err);
+      console.error("toggleFavorite error:", err);
     }
   },
 

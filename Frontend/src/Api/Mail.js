@@ -20,20 +20,12 @@ export const sendEmail = async ({ recipients, subject, text }) => {
   }
 };
 
-/**
- * Пакетная загрузка писем
- * @param {number} limit — сколько взять
- * @param {string|null} cursor — id последнего письма, откуда продолжить
- * @returns {Promise<{ items: Mail[], nextCursor: string|null, hasMore: boolean }>}
- */
-export const fetchEmails = async (limit = 50, cursor = null) => {
-  const params = { limit };
-  if (cursor) params.cursor = cursor;
+ 
+export const fetchEmails = async () => {
   const res = await axios.get(`${backendUrl}/mail`, {
-    params,
     withCredentials: true,
   });
-  return res.data;
+  return res.data; // { inbox: [...], sent: [...] }
 };
 
 /**
@@ -49,7 +41,7 @@ export const subscribeNewEmails = (onEmail) => {
     try {
       const mail = JSON.parse(e.data);
       onEmail(mail);
-    } catch {}
+    } catch { /* empty */ }
   });
   es.onerror = (err) => {
     console.error("SSE /mail/stream error:", err);

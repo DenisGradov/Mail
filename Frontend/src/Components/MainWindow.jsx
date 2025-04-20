@@ -29,13 +29,12 @@ import {
 
 import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
-import {getDate, getShortText, stripHtml} from "../Utils/Main.js";
+import { getDate, getShortText, stripHtml } from "../Utils/Main.js";
 import SendEmail from "./Ui/SendEmail.jsx";
 
 export default function MainWindow() {
-
-
   const { logoutUser, user } = useUserStore();
+  const { inbox, sent, init, toggleFavorite } = useMailStore();
 
   const [wantLogout, setWantLogout] = useState(false);
   const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 840);
@@ -46,45 +45,41 @@ export default function MainWindow() {
   const [sortType, setSortType] = useState("newest");
 
   const [newMail, setNewMail] = useState(false);
-  const handleNewMail = () => {
-     setNewMail((prev)=> !prev);
-  }
-
-
-  const toggleFavorite = useMailStore(state => state.toggleFavorite);
-
-  const {mails, init } = useMailStore();
+  const handleNewMail = () => setNewMail((prev) => !prev);
 
   const mailsPerPage = 50;
   const [currentPage, setCurrentPage] = useState(1);
 
+  // Собираем все письма для вкладки Favorites
+  const allMails = [...inbox, ...sent];
+  const favoriteCount = allMails.filter((m) => m.favorite).length;
 
-  const favoriteCount = mails.filter((m) => m.favorite).length;
-  // Tabs config
+  // Конфиг вкладок
   const tabs = {
-    Inbox: { title: "Inbox", icon: <FaInbox />, value: mails.length },
-    Sent: { title: "Sent", icon: <FaArrowCircleRight />, value: 0 },
+    Inbox: { title: "Inbox", icon: <FaInbox />, value: inbox.length },
+    Sent: { title: "Sent", icon: <FaArrowCircleRight />, value: sent.length },
     Favorites: { title: "Favorites", icon: <FaBookmark />, value: favoriteCount },
   };
 
-  const baseMails = activeTab === "Favorites" ? mails.filter(m => m.favorite) : mails;
+  // Выбираем базовый массив в зависимости от активной вкладки
+  const baseMails =
+    activeTab === "Inbox"
+      ? inbox
+      : activeTab === "Sent"
+        ? sent
+        : allMails.filter((m) => m.favorite);
 
-  const handleMailUpdate = () =>{
-    init(mailsPerPage);
-  }
+  const handleMailUpdate = () => {
+    init();
+  };
 
   useEffect(() => {
-    handleMailUpdate()
-
-    const iv = setInterval(() => {
-      handleMailUpdate()
-    }, 15000);
-
+    handleMailUpdate();
+    const iv = setInterval(handleMailUpdate, 15000);
     return () => clearInterval(iv);
   }, [init]);
 
-
-  // Handle window resize
+  // Обработка ресайза
   useEffect(() => {
     const onResize = () => {
       const desk = window.innerWidth >= 840;
@@ -95,18 +90,17 @@ export default function MainWindow() {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // --- Handlers ---
+  // --- Остальные обработчики ---
   const handleMenuOpen = () => setIsMenuOpen((prev) => !prev);
   const handleWantLogout = () => setWantLogout((prev) => !prev);
   const handleTabOpen = (tabKey) => setActiveTab(tabKey);
   const handleSearchInputUpdate = (e) => setSearchInput(e.target.value);
   const handleSortChange = (e) => setSortType(e.target.value);
 
-  // --- Filter, sort, paginate mails ---
+  // Фильтрация, сортировка, пагинация
   const filteredMails = baseMails.filter(({ from, subject, text, html }) => {
     const q = searchInput.toLowerCase();
-    const combined =
-      (from || "") + (subject || "") + (text || stripHtml(html));
+    const combined = (from || "") + (subject || "") + (text || stripHtml(html));
     return combined.toLowerCase().includes(q);
   });
 
@@ -125,15 +119,12 @@ export default function MainWindow() {
     }
   });
 
-  const totalPages = Math.max(
-    Math.ceil(sortedMails.length / mailsPerPage),
-    1
-  );
+  const totalPages = Math.max(Math.ceil(sortedMails.length / mailsPerPage), 1);
 
   useEffect(() => {
     setCurrentPage(1);
     setSelectedMails([]);
-  }, [searchInput, mails.length]);
+  }, [searchInput, inbox.length, sent.length]);
 
   const displayedMails = sortedMails.slice(
     (currentPage - 1) * mailsPerPage,
@@ -160,7 +151,7 @@ export default function MainWindow() {
   const handlePrevPage = () => setCurrentPage((p) => Math.max(p - 1, 1));
   const handleNextPage = () => setCurrentPage((p) => Math.min(p + 1, totalPages));
 
-  // --- Layout classes ---
+  // Классы для позиционирования контента
   const desktopOpen = "left-[260px] w-[calc(100%-260px)]";
   const desktopClosed = "left-[72px] w-[calc(100%-72px)]";
   const mobileOpen = "left-0 w-full";
@@ -183,15 +174,29 @@ export default function MainWindow() {
       >
         <div className="flex flex-col items-center h-full">
           <div
-            className={`${!isMenuOpen && "flex-col-reverse px-[10px]"} flex items-center w-full`}
+            className={`${
+              !isMenuOpen && "flex-col-reverse px-[10px]"
+            } flex items-center w-full`}
           >
-            <FaBars onClick={handleMenuOpen} className="text-[24px] text-icons hover-anim cursor-pointer" />
+            <FaBars
+              onClick={handleMenuOpen}
+              className="text-[24px] text-icons hover-anim cursor-pointer"
+            />
             <div className="scale-75">
-              {isMenuOpen ? <Logo /> : <SmallLogo className={`${!isMenuOpen && "my-[20px]"} scale-125 duration-0 select-none`} />}
+              {isMenuOpen ? (
+                <Logo />
+              ) : (
+                <SmallLogo
+                  className={`${!isMenuOpen && "my-[20px]"} scale-125 duration-0 select-none`}
+                />
+              )}
             </div>
           </div>
           <Line className="my-[24px]" />
-          <Button onClick={() => {handleNewMail()}} className={`${!isMenuOpen && "w-[50px]"} font-bold`}>
+          <Button
+            onClick={handleNewMail}
+            className={`${!isMenuOpen && "w-[50px]"} font-bold`}
+          >
             {isMenuOpen ? "New Message" : <FaRegPaperPlane className="text-[25px]" />}
           </Button>
           <Line className="mt-[24px] mb-[26.5px]" />
@@ -199,15 +204,33 @@ export default function MainWindow() {
             <div
               onClick={() => handleTabOpen(tab)}
               key={`Tab #${i}`}
-              className={`${isMenuOpen ? "p-[12px] w-full rounded-[10px]" : "p-[10px] px-[14px] rounded-[10px]"} ${activeTab === tab ? "bg-bg-active" : ""} hover-anim my-[2.5px] hover:bg-bg-hover opacity-50 flex justify-between items-center cursor-pointer`}
+              className={`${
+                isMenuOpen
+                  ? "p-[12px] w-full rounded-[10px]"
+                  : "p-[10px] px-[14px] rounded-[10px]"
+              } ${
+                activeTab === tab ? "bg-bg-active" : ""
+              } hover-anim my-[2.5px] hover:bg-bg-hover opacity-50 flex justify-between items-center cursor-pointer`}
             >
               <div className="flex items-center">
-                <div className={`${isMenuOpen ? "mr-[10px]" : "text-[25px] ml-[-3px]"} ${activeTab === tab ? "font-bold" : "text-icons"} w-[20px]`}>
+                <div
+                  className={`${
+                    isMenuOpen ? "mr-[10px]" : "text-[25px] ml-[-3px]"
+                  } ${
+                    activeTab === tab ? "font-bold" : "text-icons"
+                  } w-[20px]`}
+                >
                   {tabs[tab].icon}
                 </div>
-                <div className={`${!isMenuOpen && "hidden"} ${activeTab === tab ? "font-bold" : ""}`}>{tabs[tab].title}</div>
+                <div className={`${!isMenuOpen && "hidden"} ${
+                  activeTab === tab ? "font-bold" : ""
+                }`}>
+                  {tabs[tab].title}
+                </div>
               </div>
-              <div className={`${!isMenuOpen && "hidden"} ${activeTab === tab ? "font-bold" : "text-icons"}`}>
+              <div className={`${!isMenuOpen && "hidden"} ${
+                activeTab === tab ? "font-bold" : "text-icons"
+              }`}>
                 {tabs[tab].value}
               </div>
             </div>
@@ -221,7 +244,10 @@ export default function MainWindow() {
               <EmptyAvatar className={isMenuOpen && "mr-[10px]"} name={user.name} />
               <div className={!isMenuOpen && "hidden"}>{user.name || "Albert"}</div>
             </div>
-            <div onClick={handleWantLogout} className={`${!isMenuOpen && "my-[20px]"} p-[8px] hover-anim cursor-pointer`}>
+            <div
+              onClick={handleWantLogout}
+              className={`${!isMenuOpen && "my-[20px]"} p-[8px] hover-anim cursor-pointer`}
+            >
               <FaSignOutAlt className="text-[18px]" />
             </div>
           </div>
