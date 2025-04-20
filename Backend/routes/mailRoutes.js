@@ -96,6 +96,8 @@ router.get('/', async (req, res) => {
   try { sent = user.sent_emails ? JSON.parse(user.sent_emails) : []; }
   catch { sent = []; }
 
+  console.log(sent)
+  console.log(user)
   // 3) Сортируем по дате (новейшие первыми) и режем до 50
   inbox = inbox
     .sort((a, b) => new Date(b.date) - new Date(a.date))
