@@ -4,10 +4,13 @@ import Button from "./Button.jsx";
 import RoundButton from "./RoundButton.jsx";
 import PropTypes from "prop-types";
 import { sendEmail } from "../../Api/Mail.js";
+import {useLoaderStore} from "../../Store/Index.js";
 
 function SendEmail({ handleNewMail }) {
   const [form, setForm] = useState({ recipients: "", subject: "", text: "" });
   const [errors, setErrors] = useState({ recipients: "", subject: "", text: "" });
+
+  const { showLoader, hideLoader } = useLoaderStore();
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -40,6 +43,7 @@ function SendEmail({ handleNewMail }) {
     if (Object.values(newErrors).some(Boolean)) return;
 
     try {
+      showLoader();
       await sendEmail({
         recipients: form.recipients.trim().toLowerCase(),
         subject: form.subject.trim(),
@@ -51,6 +55,9 @@ function SendEmail({ handleNewMail }) {
     } catch (err) {
       console.error("SendEmail error:", err);
       setErrors((e) => ({ ...e, recipients: err.message }));
+    } finally {
+
+      hideLoader();
     }
   };
 
