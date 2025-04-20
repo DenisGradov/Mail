@@ -4,6 +4,7 @@ const backendUrl = import.meta.env.VITE_BACKEND_URL;
 
 
 
+
 export const sendEmail = async ({ recipients, subject, text }) => {
   try {
     const res = await axios.post(

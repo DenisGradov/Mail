@@ -31,14 +31,15 @@ import { useUserStore } from "../Store/Index.js";
 import { useMailStore } from "../Store/Mail.js";
 import { getDate, getShortText, stripHtml } from "../Utils/Main.js";
 import SendEmail from "./Ui/SendEmail.jsx";
+import {useMediaQuery} from "../hooks/useMediaQuery.js";
 
 export default function MainWindow() {
   const { logoutUser, user } = useUserStore();
   const { inbox, sent, init, toggleFavorite } = useMailStore();
 
   const [wantLogout, setWantLogout] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(window.innerWidth >= 840);
-  const [isMenuOpen, setIsMenuOpen] = useState(window.innerWidth >= 840);
+  const [isDesktop, setIsDesktop] = useState(useMediaQuery('(min-width: 840px)'));
+  const [isMenuOpen, setIsMenuOpen] = useState(useMediaQuery('(min-width: 840px)'));
   const [activeTab, setActiveTab] = useState("Inbox");
   const [selectedMails, setSelectedMails] = useState([]);
   const [searchInput, setSearchInput] = useState("");
@@ -124,6 +125,10 @@ export default function MainWindow() {
     setCurrentPage(1);
     setSelectedMails([]);
   }, [searchInput, inbox.length, sent.length]);
+
+  useEffect(() => {
+    setCurrentPage(1)
+  }, [activeTab]);
 
   const displayedMails = sortedMails.slice(
     (currentPage - 1) * mailsPerPage,

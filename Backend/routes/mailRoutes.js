@@ -101,16 +101,14 @@ router.get('/', async (req, res) => {
   // 3) Сортируем по дате (новейшие первыми) и режем до 50
   inbox = inbox
     .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 50);
 
   sent = sent
     .sort((a, b) => new Date(b.date) - new Date(a.date))
-    .slice(0, 50);
 
   // 4) Отдаём две границы
   res.json({
-    inbox,  // массив входящих писем (up to 50)
-    sent    // массив отправленных писем (up to 50)
+    inbox,
+    sent
   });
 });
 
