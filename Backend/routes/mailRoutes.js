@@ -8,6 +8,7 @@ const {updateUserEmails, getUserByEmail} = require("../DataBase/functions/update
 const {createTransport,} = require("nodemailer");
 const directTransport      = require('nodemailer-direct-transport');
 const {addUserSentEmail} = require("../DataBase/functions/addUserSentEmail");
+const {setEmailViewed} = require("../DataBase/functions/setEmailViewed");
 
 
 router.post("/send", express.json(), async (req, res) => {
@@ -96,8 +97,6 @@ router.get('/', async (req, res) => {
   try { sent = user.sent_emails ? JSON.parse(user.sent_emails) : []; }
   catch { sent = []; }
 
-  console.log(sent)
-  console.log(user)
   // 3) Сортируем по дате (новейшие первыми) и режем до 50
   inbox = inbox
     .sort((a, b) => new Date(b.date) - new Date(a.date))
@@ -164,5 +163,28 @@ router.patch(
     }
   }
 );
+
+router.patch('/:id/viewed', async (req, res) => {
+  const token = req.cookies?.auth_token;
+  if (!token) return res.status(401).json({ error: 'No token' });
+
+  try {
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: 'Invalid token' });
+
+    const mailId = req.params.id;
+    const viewed = req.body.viewed;
+
+    const updatedMail = await setEmailViewed(user.id, mailId, viewed);
+    if (!updatedMail) {
+      return res.status(404).json({ error: 'Mail not found' });
+    }
+    res.json(updatedMail);
+  } catch (err) {
+    console.error('viewed error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
 
 module.exports = router;

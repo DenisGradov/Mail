@@ -59,3 +59,12 @@ export const setFavorite = async (mailId, favorite) => {
   );
   return res.data;
 };
+
+export const setViewed = async (mailId, viewed) => {
+  const res = await axios.patch(
+    `${backendUrl}/mail/${encodeURIComponent(mailId)}/viewed`,
+    { viewed },
+    { withCredentials: true }
+  );
+  return res.data;
+};

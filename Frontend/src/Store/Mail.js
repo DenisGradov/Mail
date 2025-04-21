@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import {fetchEmails, setFavorite, subscribeNewEmails} from "../Api/Mail.js";
+import {fetchEmails, setFavorite, setViewed, subscribeNewEmails} from "../Api/Mail.js";
 
 export const useMailStore = create((set, get) => ({
   inbox: [],    // входящие
@@ -70,6 +70,21 @@ export const useMailStore = create((set, get) => ({
       }));
     } catch (err) {
       console.error("toggleFavorite error:", err);
+    }
+  },
+  toggleViewed: async (mailId, viewed) => {
+    try {
+      const updated = await setViewed(mailId, viewed);
+      set(state => ({
+        inbox: state.inbox.map(m =>
+          m.id === updated.id ? { ...m, viewed: updated.viewed } : m
+        ),
+        sent: state.sent.map(m =>
+          m.id === updated.id ? { ...m, viewed: updated.viewed } : m
+        ),
+      }));
+    } catch (err) {
+      console.error("toggleViewed error:", err);
     }
   },
 
