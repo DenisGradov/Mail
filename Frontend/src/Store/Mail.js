@@ -1,5 +1,11 @@
 import { create } from "zustand";
-import {fetchEmails, setFavorite, setViewed, subscribeNewEmails} from "../Api/Mail.js";
+import {
+  bulkDelete,
+  bulkSetViewed,
+  fetchEmails,
+  setFavorite,
+  setViewed,
+} from "../Api/Mail.js";
 
 export const useMailStore = create((set, get) => ({
   inbox: [],    // входящие
@@ -57,6 +63,34 @@ export const useMailStore = create((set, get) => ({
     if (es) es.close();
     set({ sse: null });
   },
+
+  bulkDelete: async (mailIds) => {
+    try {
+      await bulkDelete(mailIds);
+      set(state => ({
+        inbox: state.inbox.filter(m => !mailIds.includes(m.id)),
+        sent: state.sent.filter(m => !mailIds.includes(m.id)),
+      }));
+    } catch (err) {
+      console.error("bulkDelete error:", err);
+    }
+  },
+
+
+  bulkViewed: async (mailIds) => {
+    try {
+      await bulkSetViewed(mailIds);
+      set(state => ({
+        inbox: state.inbox.map(m => mailIds.includes(m.id) ? { ...m, viewed: true } : m),
+        sent: state.sent.map(m => mailIds.includes(m.id) ? { ...m, viewed: true } : m),
+      }));
+    } catch (err) {
+      console.error("bulkViewed error:", err);
+    }
+  },
+
+
+
   toggleFavorite: async (mailId, favorite) => {
     try {
       const updated = await setFavorite(mailId, favorite);

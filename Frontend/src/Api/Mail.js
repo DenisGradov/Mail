@@ -29,26 +29,21 @@ export const fetchEmails = async () => {
   return res.data; // { inbox: [...], sent: [...] }
 };
 
-/**
- * Подписка на новые письма через SSE
- * @param {(mail: Mail) => void} onEmail — колбэк по новому mail
- * @returns {EventSource}
- */
-export const subscribeNewEmails = (onEmail) => {
-  const es = new EventSource(`${backendUrl}/mail/stream`, {
+
+
+export const bulkDelete = async (ids) => {
+  await axios.delete(`${backendUrl}/mail/bulk`, {
+    data: { ids },
     withCredentials: true,
   });
-  es.addEventListener("email", (e) => {
-    try {
-      const mail = JSON.parse(e.data);
-      onEmail(mail);
-    } catch { /* empty */ }
-  });
-  es.onerror = (err) => {
-    console.error("SSE /mail/stream error:", err);
-  };
-  return es;
 };
+
+export const bulkSetViewed = async (ids) => {
+  await axios.patch(`${backendUrl}/mail/bulk/viewed`, { ids }, {
+    withCredentials: true,
+  });
+};
+
 
 
 export const setFavorite = async (mailId, favorite) => {

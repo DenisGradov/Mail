@@ -18,9 +18,10 @@ export default function MailView({ mail }) {
 
       {/* Body */}
       <div className="p-6 overflow-y-auto flex-1 prose max-w-none">
-        <div
+        {mail.html? (<div
           dangerouslySetInnerHTML={{ __html: mail.html }}
-        />
+        />) : <div>{mail.text}</div>}
+
       </div>
     </div>
   );

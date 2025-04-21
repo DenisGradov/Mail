@@ -9,6 +9,8 @@ const {createTransport,} = require("nodemailer");
 const directTransport      = require('nodemailer-direct-transport');
 const {addUserSentEmail} = require("../DataBase/functions/addUserSentEmail");
 const {setEmailViewed} = require("../DataBase/functions/setEmailViewed");
+const {deleteUserEmail} = require("../DataBase/functions/deleteUserEmail");
+const {bulkSetViewed} = require("../DataBase/functions/bulkSetViewed");
 
 
 router.post("/send", express.json(), async (req, res) => {
@@ -164,6 +166,28 @@ router.patch(
   }
 );
 
+
+router.patch('/bulk/viewed', async (req, res) => {
+  const token = req.cookies?.auth_token;
+  if (!token) return res.status(401).json({ error: 'No token' });
+
+  try {
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: 'Invalid token' });
+
+    const ids = req.body.ids;
+    if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be array' });
+
+    await bulkSetViewed(user.id, ids);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('bulk viewed error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
+
+
+
 router.patch('/:id/viewed', async (req, res) => {
   const token = req.cookies?.auth_token;
   if (!token) return res.status(401).json({ error: 'No token' });
@@ -186,5 +210,22 @@ router.patch('/:id/viewed', async (req, res) => {
   }
 });
 
+router.delete('/bulk', async (req, res) => {
+  const token = req.cookies?.auth_token;
+  if (!token) return res.status(401).json({ error: 'No token' });
 
+  try {
+    const user = await getUserByToken(token);
+    if (!user) return res.status(401).json({ error: 'Invalid token' });
+
+    const ids = req.body.ids;
+    if (!Array.isArray(ids)) return res.status(400).json({ error: 'ids must be array' });
+
+    await deleteUserEmail(user.id, ids);
+    res.json({ success: true });
+  } catch (err) {
+    console.error('bulk delete error:', err);
+    res.status(500).json({ error: 'Internal error' });
+  }
+});
 module.exports = router;
