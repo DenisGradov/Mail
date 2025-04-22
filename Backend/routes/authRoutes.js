@@ -4,10 +4,10 @@ const { addUser } = require('../DataBase/functions/addUser');
 const { isFieldUnique } = require('../DataBase/functions/isFieldUnique');
 const { generateToken } = require('../Utils/main');
 const { hashPassword } = require('../Utils/hashPassword');
-const {loginUser} = require("../DataBase/functions/loginUser");
-const {getUserByToken} = require("../DataBase/functions/getUserByToken");
-const domain = process.env.DEFAULT_MAIL;
-
+const { loginUser } = require("../DataBase/functions/loginUser");
+const { getUserByToken } = require("../DataBase/functions/getUserByToken");
+const { existsSync, readFileSync } = require("node:fs");
+const path = require("node:path");
 
 const CAPTCHA_SKIP = process.env.VITE_CAPTCHA_SKIP === 'true';
 
@@ -20,7 +20,6 @@ router.post('/logout', (req, res) => {
 
   res.status(200).json({ message: 'Logged out successfully' });
 });
-
 
 router.get('/verify-token', async (req, res) => {
   const token = req.cookies?.auth_token;
@@ -35,14 +34,24 @@ router.get('/verify-token', async (req, res) => {
       return res.status(401).json({ error: 'Invalid token' });
     }
 
-    res.status(200).json({
-      message: 'Token is valid',
+    let avatarBase64 = null;
+    if (user.avatar) {
+      const avatarPath = path.join(__dirname, '..', 'DataBase', user.avatar);
+      if (existsSync(avatarPath)) {
+        const avatarFile = readFileSync(avatarPath);
+        const avatarExtension = path.extname(user.avatar).substring(1);
+        const mimeType = `image/${avatarExtension}`;
+        avatarBase64 = `data:${mimeType};base64,${avatarFile.toString('base64')}`;
+      }
+    }
+    res.json({
       userId: user.id,
       login: user.login,
       email: user.email,
       name: user.name,
       surname: user.surname,
       status: user.status,
+      avatar: avatarBase64,
     });
   } catch (err) {
     console.error(err);
@@ -66,21 +75,22 @@ async function verifyTurnstile(token, remoteIp) {
   return json.success;
 }
 
-// LOGIN
 router.post("/login", async (req, res) => {
   const { username, password, remember, captcha } = req.body;
-  // 1) проверка капчи
+
   if (!CAPTCHA_SKIP && (!captcha || !(await verifyTurnstile(captcha, req.ip)))) {
     return res.status(400).json({ error: "Captcha verification failed" });
   }
-  // 2) валидация
+
   if (!username || !password) {
     return res.status(400).json({ error: "Username and password required" });
   }
+
   try {
     const result = await loginUser(username, password);
-
-    if (!result) return res.status(401).json({ error: "Invalid login or password" });
+    if (!result) {
+      return res.status(401).json({ error: "Invalid login or password" });
+    }
 
     const { token, user } = result;
     res.cookie("auth_token", token, {
@@ -89,6 +99,18 @@ router.post("/login", async (req, res) => {
       sameSite: "Lax",
       secure: false,
     });
+
+    let avatarBase64 = null;
+    if (user.avatar) {
+      const avatarPath = path.join(__dirname, '..', 'DataBase', user.avatar);
+      if (existsSync(avatarPath)) {
+        const avatarFile = readFileSync(avatarPath);
+        const avatarExtension = path.extname(user.avatar).substring(1);
+        const mimeType = `image/${avatarExtension}`;
+        avatarBase64 = `data:${mimeType};base64,${avatarFile.toString('base64')}`;
+      }
+    }
+
     res.json({
       userId: user.id,
       login: user.login,
@@ -96,6 +118,7 @@ router.post("/login", async (req, res) => {
       name: user.name,
       surname: user.surname,
       status: user.status,
+      avatar: avatarBase64,
     });
   } catch (err) {
     console.error(err);
@@ -103,14 +126,13 @@ router.post("/login", async (req, res) => {
   }
 });
 
-// REGISTER
 router.post("/register", async (req, res) => {
   const { login, password, name, surname, offer, captcha } = req.body;
-  // 1) проверка капчи
+
   if (!CAPTCHA_SKIP && (!captcha || !(await verifyTurnstile(captcha, req.ip)))) {
-    return res.status(400).json({ errors: { captcha: "Пожалуйста, подтвердите, что вы не робот" } });
+    return res.status(400).json({ errors: { captcha: "Please confirm you are not a robot" } });
   }
-  // 2) базовая валидация
+
   const errors = {};
   if (!offer) errors.offer = "You must agree to the terms";
   if (!login || login.length < 5) errors.login = "Login must be at least 5 characters";
@@ -120,6 +142,7 @@ router.post("/register", async (req, res) => {
   if (Object.keys(errors).length) {
     return res.status(400).json({ errors });
   }
+
   try {
     const isUnique = await isFieldUnique("login", login);
     if (!isUnique) return res.status(400).json({ errors: { login: "Login already exists" } });

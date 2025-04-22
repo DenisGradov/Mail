@@ -10,6 +10,7 @@ function initializeDB() {
       status INTEGER,
       name TEXT,
       surname TEXT,
+      avatar TEXT,
       auth TEXT,
       logs TEXT,
       emails TEXT,

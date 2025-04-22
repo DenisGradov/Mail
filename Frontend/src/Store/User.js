@@ -30,6 +30,7 @@ export const useUserStore = create(
                 email: response.data.email,
                 name: response.data.name || '',
                 surname: response.data.surname || '',
+                avatar: response.data.avatar || 'none',
                 status: response.data.status || 0,
               },
             });
@@ -62,6 +63,7 @@ export const useUserStore = create(
               name: response.data.name || '',
               surname: response.data.surname || '',
               status: response.data.status || 0,
+              avatar: response.data.avatar || 'none',
             },
           });
         } else {

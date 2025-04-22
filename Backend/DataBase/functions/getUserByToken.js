@@ -5,7 +5,7 @@ const db = require('../db');
 async function getUserByToken(token) {
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, login, email, name, surname, status, emails, sent_emails
+      `SELECT id, login, email, name, surname, status, emails, sent_emails, avatar
        FROM users
        WHERE auth = ?`,
       [token],

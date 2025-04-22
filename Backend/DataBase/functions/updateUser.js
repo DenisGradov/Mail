@@ -3,34 +3,41 @@ const db = require("../db");
 async function updateUser(id, updatedData) {
   let query = "UPDATE users SET ";
   let params = [];
+  const fieldsToUpdate = [];
 
-  // Строим запрос с динамическими полями
   if (updatedData.name) {
-    query += "name = ?, ";
+    fieldsToUpdate.push("name = ?");
     params.push(updatedData.name);
   }
   if (updatedData.surname) {
-    query += "surname = ?, ";
+    fieldsToUpdate.push("surname = ?");
     params.push(updatedData.surname);
   }
   if (updatedData.login) {
-    query += "login = ?, ";
+    fieldsToUpdate.push("login = ?");
     params.push(updatedData.login);
   }
   if (updatedData.password) {
-    query += "password = ?, ";
+    fieldsToUpdate.push("password = ?");
     params.push(updatedData.password);
   }
+  if (updatedData.avatar) {
+    fieldsToUpdate.push("avatar = ?");
+    params.push(updatedData.avatar);
+  }
 
-  query = query.slice(0, -2); // Убираем последнюю запятую
-  query += " WHERE id = ?"; // Добавляем условие для ID
+  if (fieldsToUpdate.length === 0) {
+    return 0; // No changes to apply
+  }
 
+  query += fieldsToUpdate.join(", ");
+  query += " WHERE id = ?";
   params.push(id);
 
   return new Promise((resolve, reject) => {
     db.run(query, params, function (err) {
       if (err) return reject(err);
-      resolve(this.changes); // Возвращаем количество измененных строк
+      resolve(this.changes);
     });
   });
 }

@@ -13,7 +13,7 @@ async function loginUser(login, password) {
 
   return new Promise((resolve, reject) => {
     db.get(
-      `SELECT id, login, email, name, surname, status FROM users WHERE login = ? AND password = ?`,
+      `SELECT id, login, email, name, surname, avatar , status FROM users WHERE login = ? AND password = ?`,
       [login, hashedPassword],
       (err, row) => {
         if (err) return reject(err);
