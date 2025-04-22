@@ -214,7 +214,7 @@ function Settings() {
 
       <div className="flex justify-between items-center">
         <div className="flex flex-col">
-          <span className="text-text-primary text-[18px]">Account</span>
+          <span className="text-text-primary text-[18px]">Account - <span className="text-primary text-[16px]">{user.email}</span></span>
           <span className="text-text-secondary-60 text-[16px]">
             The section where you can manage the main parameters of your profile
           </span>

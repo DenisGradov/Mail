@@ -47,7 +47,7 @@ export default function MainWindow() {
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
 
-  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const handleSettingsOpen = () => {
     setIsSettingsOpen((prev)=> !prev);
   }
