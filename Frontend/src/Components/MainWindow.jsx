@@ -28,11 +28,12 @@ import {
 } from "react-icons/fa";
 
 import { useUserStore } from "../Store/Index.js";
-import { useMailStore } from "../Store/Mail.js";
+import { useMailStore } from "../Store/Index.js";
 import { getDate, getShortText, stripHtml } from "../Utils/Main.js";
 import SendEmail from "./Ui/SendEmail.jsx";
 import {useMediaQuery} from "../hooks/useMediaQuery.js";
 import MailView from "./Ui/MailView.jsx";
+import Settings from "./Ui/Settings.jsx";
 
 export default function MainWindow() {
   const { logoutUser, user } = useUserStore();
@@ -45,6 +46,11 @@ export default function MainWindow() {
   const [selectedMails, setSelectedMails] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
+
+  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+  const handleSettingsOpen = () => {
+    setIsSettingsOpen((prev)=> !prev);
+  }
 
   const [isMailOpen, setIsMailOpen] = useState(false);
   const handleMailOpen = (mail) => {
@@ -94,7 +100,7 @@ export default function MainWindow() {
     setSelectedMails([]); // сброс выделения
     setIsContextWindowOpen({ state: false, id: '', x: 0, y: 0 }); // закрытие меню
   };
-  
+
   const [newMail, setNewMail] = useState(false);
   const handleNewMail = () => setNewMail((prev) => !prev);
 
@@ -329,7 +335,7 @@ export default function MainWindow() {
           <Line className={`${!isMenuOpen && "mt-[40px]"} my-[20px]`} />
           <div className={`${!isMenuOpen && "flex-col"} flex justify-between items-center`}>
             <div className="flex items-center">
-              <EmptyAvatar className={isMenuOpen ? "mr-[10px]" : ""} name={user.name} />
+              <EmptyAvatar onClick={handleSettingsOpen} className={isMenuOpen ? "mr-[10px]" : ""} name={user.name} />
               <div className={!isMenuOpen && "hidden"}>{user.name || "Albert"}</div>
             </div>
             <div
@@ -344,13 +350,17 @@ export default function MainWindow() {
 
       <div className={`absolute top-0 ${contentPosition} h-full bg-main flex flex-col z-10 overflow-hidden`}>
         <div
-          className={`relative flex items-center ${!isMailOpen && "justify-center"} w-full py-[20px] px-[16px] h-[80px]  top-0 left-0 z-20 `}>
-          {isMailOpen ? (
-            <div className="text-[17px] font-bold left-[16px]">
+          className={`relative flex items-center ${!isMailOpen && !isSettingsOpen && "justify-center"} w-full py-[20px] px-[16px] h-[80px]  top-0 left-0 z-20 `}>
+          {isMailOpen || isSettingsOpen ? (
+            <div className={`text-[17px] font-bold left-[16px] ${isSettingsOpen && "flex items-center"}`}>
               <FaArrowLeft
-                onClick={() => handleMailOpen(false)}
+                onClick={() => {
+                  if (isMailOpen) handleMailOpen(false)
+                  if (isSettingsOpen) handleSettingsOpen()
+                }}
                 className="text-[32px] hover-anim cursor-pointer"
               />
+              {isSettingsOpen && <span className="ml-[10px] text-[25px] text-icons">Settings</span>}
             </div>
           ) : (
             <InputSearch
@@ -360,279 +370,294 @@ export default function MainWindow() {
             />
           )}
 
-          <div className="absolute right-[16px] flex items-center space-x-[14px] h-[200px]">
+          <div className="absolute right-[45px] flex items-center space-x-[14px] h-[200px]">
             <FaBell className="text-[22px] hover-anim text-icons cursor-pointer"/>
-            <FaCog className="text-[22px] hover-anim hidden 375px:block text-icons cursor-pointer"/>
+            <FaCog onClick={handleSettingsOpen}
+                   className="text-[22px] hover-anim hidden 375px:block text-icons cursor-pointer"/>
             <EmptyAvatar
+              onClick={handleSettingsOpen}
               className="w-[33px] h-[33px] hidden 450px:flex items-center justify-center select-none"
               name={user.name}
             />
           </div>
         </div>
 
-        <div>
-          <Line/>
-        </div>
-        <div
-          className="470px:flex-row flex-col 375px:mx-[20px] my-[10px] flex justify-between 470px:items-center w-full">
-          <div className="flex items-center">
-            {!isMailOpen ? (
-              <div className="flex items-center">
-                {selectedMails.length === displayedMails.length ? (
-                  <div onClick={() => handleSelectMails("all")} className="hover-anim cursor-pointer">
-                    <FaCheckSquare className="text-icons text-[19px] m-[8px]"/>
+        {!isSettingsOpen && (
+          <>
+
+            <div>
+              <Line/>
+            </div>
+            <div
+              className="470px:flex-row flex-col 375px:mx-[20px] my-[10px] flex justify-between 470px:items-center w-full">
+              <div className="flex items-center ml-[12px]">
+                {!isMailOpen ? (
+                  <div className="flex items-center">
+                    {selectedMails.length === displayedMails.length ? (
+                      <div onClick={() => handleSelectMails("all")} className="hover-anim cursor-pointer">
+                        <FaCheckSquare className="text-icons text-[19px] m-[8px]"/>
+                      </div>
+                    ) : (
+                      <div onClick={() => handleSelectMails("all")} className="hover-anim cursor-pointer">
+                        <FaRegSquare className="text-icons text-[19px] m-[8px]"/>
+                      </div>
+                    )}
+                    <div className="hover-anim cursor-pointer">
+                      <FaEllipsisV
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          const rect = e.currentTarget.getBoundingClientRect();
+                          handleContextWindowOpen(selectedMails, rect.left, rect.bottom);
+                        }}
+                        className="text-icons text-[19px]"
+                      />
+
+                    </div>
+                    <div onClick={handleMailUpdate} className="hover-anim cursor-pointer">
+                      <FaSync className="text-icons text-[19px] m-[8px]"/>
+                    </div>
+                    {isContextWindowOpen.state && (
+                      <div
+                        className="absolute  840px:ml-[-240px] mt-[-20px] bg-container z-50 p-[5px] rounded-[10px] border border-stroke"
+                        style={{top: isContextWindowOpen.y, left: isContextWindowOpen.x}}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div
+                          className="flex items-center p-[4px] cursor-pointer hover-anim"
+                          onClick={() => handleContextAction("delete")}
+                        >
+                          <FaTrashAlt className="text-icons text-[16px]"/>
+                          <span className="ml-[5px] text-icons text-[16px]">Delete</span>
+                        </div>
+                        <Line/>
+                        <div
+                          className="flex items-center p-[4px] cursor-pointer hover-anim"
+                          onClick={() => handleContextAction("read")}
+                        >
+                          <FaEye className="text-icons text-[16px]"/>
+                          <span className="ml-[5px] text-icons text-[16px]">Read</span>
+                        </div>
+                      </div>
+                    )}
+
                   </div>
                 ) : (
-                  <div onClick={() => handleSelectMails("all")} className="hover-anim cursor-pointer">
-                    <FaRegSquare className="text-icons text-[19px] m-[8px]"/>
-                  </div>
-                )}
-                <div className="hover-anim cursor-pointer">
-                  <FaEllipsisV
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      handleContextWindowOpen(selectedMails, rect.left, rect.bottom);
-                    }}
-                    className="text-icons text-[19px]"
-                  />
-
-                </div>
-                <div onClick={handleMailUpdate} className="hover-anim cursor-pointer">
-                  <FaSync className="text-icons text-[19px] m-[8px]"/>
-                </div>
-                {isContextWindowOpen.state && (
-                  <div
-                    className="absolute  840px:ml-[-240px] mt-[-20px] bg-container z-50 p-[5px] rounded-[10px] border border-stroke"
-                    style={{top: isContextWindowOpen.y, left: isContextWindowOpen.x}}
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <div
-                      className="flex items-center p-[4px] cursor-pointer hover-anim"
-                      onClick={() => handleContextAction("delete")}
-                    >
-                      <FaTrashAlt className="text-icons text-[16px]"/>
-                      <span className="ml-[5px] text-icons text-[16px]">Delete</span>
-                    </div>
-                    <Line/>
-                    <div
-                      className="flex items-center p-[4px] cursor-pointer hover-anim"
-                      onClick={() => handleContextAction("read")}
-                    >
-                      <FaEye className="text-icons text-[16px]"/>
-                      <span className="ml-[5px] text-icons text-[16px]">Read</span>
-                    </div>
+                  <div className="flex items-center justify-center">
+                    <FaTrashAlt className="text-icons text-[20px] hover-anim cursor-pointer"/>
+                    {activeTab !== "Sent" && <div className="ml-[10px] cursor-pointer">
+                      {isMailOpen.favorite ? <FaBookmark
+                          onClick={() => toggleFavorite(isMailOpen.id, false)} className="text-yellow-400"/> :
+                        <FaRegBookmark
+                          onClick={() => toggleFavorite(isMailOpen.id, true)}/>}
+                    </div>}
                   </div>
                 )}
 
+
               </div>
-            ) : (
-              <div className="flex items-center justify-center">
-                <FaTrashAlt className="text-icons text-[20px] hover-anim cursor-pointer"/>
-                {activeTab !== "Sent" && <div className="ml-[10px] cursor-pointer">
-                  {isMailOpen.favorite ? <FaBookmark
-                    onClick={() => toggleFavorite(isMailOpen.id, false)} className="text-yellow-400"/> : <FaRegBookmark
-                    onClick={() => toggleFavorite(isMailOpen.id, true)}/>}
-                </div>}
-              </div>
-            )}
+              <div className="flex items-center justify-center space-x-3 select-none mr-[65px]">
+                {!isMailOpen ? (
+                  <>
+                    <SelectSort value={sortType} onChange={handleSortChange}/>
 
-
-          </div>
-          <div className="flex items-center justify-center space-x-3 select-none mr-[45px]">
-            {!isMailOpen ? (
-              <>
-                <SelectSort value={sortType} onChange={handleSortChange}/>
-
-                <div className="flex items-center ml-[3px]">
-                  <FaArrowLeft
-                    onClick={handlePrevPage}
-                    className={`hover-anim cursor-pointer  ${currentPage === 1 && "opacity-40 pointer-events-none"}`}
-                  />
-                  <span className="text-text-secondary text-[15px] mx-[3px]">
+                    <div className="flex items-center ml-[3px]">
+                      <FaArrowLeft
+                        onClick={handlePrevPage}
+                        className={`hover-anim cursor-pointer  ${currentPage === 1 && "opacity-40 pointer-events-none"}`}
+                      />
+                      <span className="text-text-secondary text-[15px] mx-[3px]">
           {`${rangeStart}-${rangeEnd} from ${filteredMails.length}`}
         </span>
-                  <FaArrowRight
-                    onClick={handleNextPage}
-                    className={`hover-anim cursor-pointer z-40 ${currentPage === totalPages && "opacity-40 pointer-events-none"}`}
-                  />
-                </div>
-              </>
-            ) : (
-              <div className="flex items-center space-x-4">
-                <FaArrowLeft
-                  onClick={handlePrevMail}
-                  className={`text-[20px] hover-anim cursor-pointer ${openIndex === 1 ? "opacity-40 pointer-events-none" : ""}`}
-                />
-                <span className="text-text-secondary text-[15px]">
+                      <FaArrowRight
+                        onClick={handleNextPage}
+                        className={`hover-anim cursor-pointer z-40 ${currentPage === totalPages && "opacity-40 pointer-events-none"}`}
+                      />
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex items-center space-x-4">
+                    <FaArrowLeft
+                      onClick={handlePrevMail}
+                      className={`text-[20px] hover-anim cursor-pointer ${openIndex === 1 ? "opacity-40 pointer-events-none" : ""}`}
+                    />
+                    <span className="text-text-secondary text-[15px]">
     {`${openIndex} of ${openTotal}`}
   </span>
-                <FaArrowRight
-                  onClick={handleNextMail}
-                  className={`text-[20px] hover-anim cursor-pointer z-40 ${openIndex === openTotal ? "opacity-40 pointer-events-none" : ""}`}
-                />
+                    <FaArrowRight
+                      onClick={handleNextMail}
+                      className={`text-[20px] hover-anim cursor-pointer z-40 ${openIndex === openTotal ? "opacity-40 pointer-events-none" : ""}`}
+                    />
+                  </div>
+                )}
               </div>
-            )}
-          </div>
 
-        </div>
+            </div>
+          </>
+
+        )}
 
         <div>
           <Line/>
         </div>
-        {!isMailOpen && <div className="overflow-y-auto max-h-[calc(100vh-80px)] px-[16px] py-[20px]">
-          <div className="mx-auto w-full px-[5px] overflow-y-auto overflow-x-hidden m-[10px]">
-            {displayedMails.map((mail, mailIndex) => (
-              <div key={`Mail #${mailIndex}`} className="w-full mx-[10px] px-[10px] pr-[25px]">
-                <div
-                  onClick={() => handleMailOpen(mail)}
-                  onContextMenu={(e) => {
-                    e.preventDefault();
-                    handleContextWindowOpen([mail.id], e.clientX, e.clientY);
-                  }}
-                  className="hover:scale-100 hover:bg-bg-hover hover-anim cursor-pointer py-[10px]"
-                >
-                  {isDesktop ? (
-                    <div className="flex items-center">
-                      <div className="flex items-center flex-[25%]">
-                        {selectedMails.includes(mail.id) ? (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectMails("id", mail.id);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <FaCheckSquare className="text-icons text-[19px] hover-anim"/>
-                          </div>
-                        ) : (
-                          <div
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleSelectMails("id", mail.id);
-                            }}
-                            className="cursor-pointer"
-                          >
-                            <FaRegSquare className="text-icons text-[19px] hover-anim"/>
-                          </div>
-                        )}
-                        {activeTab !== "Sent" && (
-                          <div
-                            className="ml-[10px] cursor-pointer"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              toggleFavorite(mail.id, !mail.favorite);
-                            }}
-                          >
-                            {mail.favorite ? (
-                              <FaBookmark className="text-yellow-400"/>
-                            ) : (
-                              <FaRegBookmark/>
-                            )}
-                          </div>
-                        )}
-                        <div
-                          className={`${
-                            mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
-                          } text-[17px] ml-[10px]`}
-                        >
-                          {getShortText(activeTab === "Sent" ? mail.to : mail.from || "none", 30, false)}
-                        </div>
-                      </div>
-                      <div className="flex items-center flex-[60%]">
-                        {activeTab !== "Sent" && (
-                          <div
-                            className={`${
-                              mail.viewed ? "opacity-0" : "opacity-100"
-                            } w-[8px] h-[8px] rounded-full bg-primary`}
-                          />
-                        )}
-                        <div
-                          className={`${
-                            mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
-                          } mx-[10px] text-[17px]`}
-                        >
-                          {getShortText(mail.subject || "Без темы", 30, false)}
-                        </div>
-                        <div
-                          className={`${
-                            mail.viewed
-                              ? "font-medium text-text-secondary"
-                              : "font-bold text-text-secondary-60"
-                          } text-[17px]`}
-                        >
-                          {getShortText(mail.text || stripHtml(mail.html) || "No text", 70, true)}
-                        </div>
-                      </div>
-                      <div className="flex-[0.5%] text-center">{getDate(mail.date)}</div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col">
-                      <div className="flex flex-col flex-1">
-                        <div className="flex items-center">
-                          <div
-                            className={`${
-                              mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
-                            } text-[17px]`}
-                          >
-                            {getShortText(mail.from || "none", 18, false)}
-                          </div>
-                        </div>
-                        <div
-                          className={`${
-                            mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
-                          } text-[17px] mt-[4px]`}
-                        >
-                          {getShortText(mail.subject || "Без темы", 20, false)}
-                        </div>
-                        <div
-                          className={`${
-                            mail.viewed
-                              ? "font-medium text-text-secondary"
-                              : "font-bold text-text-secondary-60"
-                          } text-[17px] mt-[4px]`}
-                        >
-                          {getShortText(mail.text || stripHtml(mail.html) || "No text", 20, true)}
-                        </div>
-                      </div>
-                      <div className="flex items-center justify-between w-full bg">
-                        <div className="flex items-center">
+        {!isMailOpen && !isSettingsOpen &&
+          <div className="overflow-y-auto max-h-[calc(100vh-80px)] px-[16px] py-[20px]">
+            <div className="mx-auto w-full px-[5px] overflow-y-auto overflow-x-hidden m-[10px]">
+              {displayedMails.map((mail, mailIndex) => (
+                <div key={`Mail #${mailIndex}`} className="w-full mx-[10px] px-[10px] pr-[25px]">
+                  <div
+                    onClick={() => handleMailOpen(mail)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      handleContextWindowOpen([mail.id], e.clientX, e.clientY);
+                    }}
+                    className="hover:scale-100 hover:bg-bg-hover hover-anim cursor-pointer py-[10px]"
+                  >
+                    {isDesktop ? (
+                      <div className="flex items-center">
+                        <div className="flex items-center flex-[25%]">
                           {selectedMails.includes(mail.id) ? (
-                            <div onClick={() => handleSelectMails("id", mail.id)} className="cursor-pointer">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectMails("id", mail.id);
+                              }}
+                              className="cursor-pointer"
+                            >
                               <FaCheckSquare className="text-icons text-[19px] hover-anim"/>
                             </div>
                           ) : (
-                            <div onClick={() => handleSelectMails("id", mail.id)} className="cursor-pointer">
+                            <div
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleSelectMails("id", mail.id);
+                              }}
+                              className="cursor-pointer"
+                            >
                               <FaRegSquare className="text-icons text-[19px] hover-anim"/>
                             </div>
                           )}
-                          <div className="ml-2 cursor-pointer">
-                            {mail.favorite ? (
-                              <FaBookmark className="text-yellow-400" onClick={() => toggleFavorite(mail.id, false)}/>
-                            ) : (
-                              <FaRegBookmark onClick={() => toggleFavorite(mail.id, true)}/>
-                            )}
-                          </div>
-                        </div>
-                        <div className="flex items-center">
+                          {activeTab !== "Sent" && (
+                            <div
+                              className="ml-[10px] cursor-pointer"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleFavorite(mail.id, !mail.favorite);
+                              }}
+                            >
+                              {mail.favorite ? (
+                                <FaBookmark className="text-yellow-400"/>
+                              ) : (
+                                <FaRegBookmark/>
+                              )}
+                            </div>
+                          )}
                           <div
                             className={`${
-                              mail.viewed ? "opacity-0" : "opacity-100"
-                            } w-[8px] h-[8px] rounded-full bg-primary`}
-                          />
-                          <div className="ml-[10px]">{getDate(mail.date)}</div>
+                              mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
+                            } text-[17px] ml-[10px]`}
+                          >
+                            {getShortText(activeTab === "Sent" ? mail.to : mail.from || "none", 30, false)}
+                          </div>
+                        </div>
+                        <div className="flex items-center flex-[60%]">
+                          {activeTab !== "Sent" && (
+                            <div
+                              className={`${
+                                mail.viewed ? "opacity-0" : "opacity-100"
+                              } w-[8px] h-[8px] rounded-full bg-primary`}
+                            />
+                          )}
+                          <div
+                            className={`${
+                              mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
+                            } mx-[10px] text-[17px]`}
+                          >
+                            {getShortText(mail.subject || "Без темы", 30, false)}
+                          </div>
+                          <div
+                            className={`${
+                              mail.viewed
+                                ? "font-medium text-text-secondary"
+                                : "font-bold text-text-secondary-60"
+                            } text-[17px]`}
+                          >
+                            {getShortText(mail.text || stripHtml(mail.html) || "No text", 70, true)}
+                          </div>
+                        </div>
+                        <div className="flex-[0.5%] text-center">{getDate(mail.date)}</div>
+                      </div>
+                    ) : (
+                      <div className="flex flex-col">
+                        <div className="flex flex-col flex-1">
+                          <div className="flex items-center">
+                            <div
+                              className={`${
+                                mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
+                              } text-[17px]`}
+                            >
+                              {getShortText(mail.from || "none", 18, false)}
+                            </div>
+                          </div>
+                          <div
+                            className={`${
+                              mail.viewed ? "font-medium text-icons" : "font-bold text-text-primary"
+                            } text-[17px] mt-[4px]`}
+                          >
+                            {getShortText(mail.subject || "Без темы", 20, false)}
+                          </div>
+                          <div
+                            className={`${
+                              mail.viewed
+                                ? "font-medium text-text-secondary"
+                                : "font-bold text-text-secondary-60"
+                            } text-[17px] mt-[4px]`}
+                          >
+                            {getShortText(mail.text || stripHtml(mail.html) || "No text", 20, true)}
+                          </div>
+                        </div>
+                        <div className="flex items-center justify-between w-full bg">
+                          <div className="flex items-center">
+                            {selectedMails.includes(mail.id) ? (
+                              <div onClick={() => handleSelectMails("id", mail.id)} className="cursor-pointer">
+                                <FaCheckSquare className="text-icons text-[19px] hover-anim"/>
+                              </div>
+                            ) : (
+                              <div onClick={() => handleSelectMails("id", mail.id)} className="cursor-pointer">
+                                <FaRegSquare className="text-icons text-[19px] hover-anim"/>
+                              </div>
+                            )}
+                            <div className="ml-2 cursor-pointer">
+                              {mail.favorite ? (
+                                <FaBookmark className="text-yellow-400" onClick={() => toggleFavorite(mail.id, false)}/>
+                              ) : (
+                                <FaRegBookmark onClick={() => toggleFavorite(mail.id, true)}/>
+                              )}
+                            </div>
+                          </div>
+                          <div className="flex items-center">
+                            <div
+                              className={`${
+                                mail.viewed ? "opacity-0" : "opacity-100"
+                              } w-[8px] h-[8px] rounded-full bg-primary`}
+                            />
+                            <div className="ml-[10px]">{getDate(mail.date)}</div>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  )}
+                    )}
+                  </div>
+                  <div className={`w-full h-[1px] bg-stroke`}/>
                 </div>
-                <div className={`w-full h-[1px] bg-stroke`}/>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
         }
         {isMailOpen && <MailView mail={isMailOpen}/>}
+        {isSettingsOpen && (
+          <div className="overflow-auto flex-1 max-h-[calc(100vh-80px)]"> {/* 100vh - высота шапки */}
+            <Settings />
+          </div>
+        )}
       </div>
 
 

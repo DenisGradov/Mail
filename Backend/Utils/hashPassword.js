@@ -13,4 +13,9 @@ function hashPassword(password) {
     .digest('hex');
 }
 
-module.exports = { hashPassword };
+function comparePassword(enteredPassword, storedPassword) {
+  const hashedEnteredPassword = hashPassword(enteredPassword);
+  return hashedEnteredPassword === storedPassword;
+}
+
+module.exports = { hashPassword, comparePassword };

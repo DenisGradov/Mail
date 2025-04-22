@@ -8,6 +8,7 @@ dotenv.config({ path: path.join(__dirname, '..', 'Frontend', '.env') });
 
 const authRoutes = require('./routes/authRoutes');
 const mailRoutes = require('./routes/mailRoutes');
+const userRoutes = require('./routes/userRoutes');
 const { initializeDB } = require('./DataBase/functions/createUsersTable');
 const {initializeEmailsTable} = require("./DataBase/functions/createEmailsTable");
 
@@ -32,12 +33,14 @@ app.use(express.json());
 
 app.use('/api/auth', authRoutes);
 app.use('/api/mail', mailRoutes);
+app.use('/api/users', userRoutes);
 
 // Создание БД и таблицы
 initializeDB();
 
 
 require('./services/smtp');
+const {updateUser} = require("./DataBase/functions/updateUser");
 
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);

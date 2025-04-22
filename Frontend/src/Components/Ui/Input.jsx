@@ -11,7 +11,8 @@ const Input = forwardRef(function Input(
     name,
     onKeyDown,
     maxLength = 100,
-    customClass = ''
+    customClass = '',
+    className
   },
   ref
 ) {
@@ -25,7 +26,7 @@ const Input = forwardRef(function Input(
     type === 'password' ? (passwordHidden ? 'text' : 'password') : 'text';
 
   return (
-    <div className="relative w-full rounded-[10px]">
+    <div className={`relative w-full rounded-[10px] ${className}`}>
       <input
         ref={ref}
         type={getInputType()}
@@ -59,6 +60,7 @@ Input.propTypes = {
   onKeyDown: PropTypes.func,
   maxLength: PropTypes.number,
   customClass: PropTypes.string,
+  className: PropTypes.string
 };
 
 export default Input;

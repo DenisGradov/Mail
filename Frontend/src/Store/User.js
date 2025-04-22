@@ -13,6 +13,9 @@ export const useUserStore = create(
       theme: "theme-black",
       accounts: [],
       user: {},
+      setUser: (userData) => {
+        set({ user: { ...userData } });
+      },
 
       checkAuth: async () => {
         try {
