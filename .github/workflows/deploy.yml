@@ -14,19 +14,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # 2) Проверяем наличие .env.backend и .env.frontend
-      - name: Check .env files
-        run: |
-          if [ ! -f .env.backend ]; then
-            echo "Error: .env.backend not found"
-            exit 1
-          fi
-          if [ ! -f .env.frontend ]; then
-            echo "Error: .env.frontend not found"
-            exit 1
-          fi
-
-      # 3) Копируем файлы на сервер
+      # 2) Копируем файлы на сервер
       - name: Sync code to server via SCP
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -42,7 +30,7 @@ jobs:
             .git/
             *.db
 
-      # 4) Перезапускаем контейнеры
+      # 3) Перезапускаем контейнеры
       - name: Run docker-compose on server
         uses: appleboy/ssh-action@v1.2.2
         with:
