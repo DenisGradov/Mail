@@ -10,16 +10,23 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+      # 1) Скачиваем репозиторий
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Check .env file
+      # 2) Проверяем наличие .env.backend и .env.frontend
+      - name: Check .env files
         run: |
-          if [ ! -f .env ]; then
-            echo "Error: .env file not found"
+          if [ ! -f .env.backend ]; then
+            echo "Error: .env.backend not found"
+            exit 1
+          fi
+          if [ ! -f .env.frontend ]; then
+            echo "Error: .env.frontend not found"
             exit 1
           fi
 
+      # 3) Копируем файлы на сервер
       - name: Sync code to server via SCP
         uses: appleboy/scp-action@v0.1.4
         with:
@@ -35,6 +42,7 @@ jobs:
             .git/
             *.db
 
+      # 4) Перезапускаем контейнеры
       - name: Run docker-compose on server
         uses: appleboy/ssh-action@v1.2.2
         with:
@@ -45,11 +53,23 @@ jobs:
           script: |
             set -e
             cd /opt/mail
-            if [ ! -f .env ]; then
-              echo "Error: .env file not found"
+            # Проверяем наличие .env файлов на сервере
+            if [ ! -f .env.backend ]; then
+              echo "Error: .env.backend not found on server"
               exit 1
             fi
-            export $(grep -Ev '^\s*(#|$)' .env | xargs)
+            if [ ! -f .env.frontend ]; then
+              echo "Error: .env.frontend not found on server"
+              exit 1
+            fi
+            # Выводим содержимое .env файлов для отладки (без секретных данных)
+            echo "Contents of .env.backend:"
+            grep -Ev 'SECRET|KEY' .env.backend || true
+            echo "Contents of .env.frontend:"
+            grep -Ev 'SECRET|KEY' .env.frontend || true
+            # Экспортируем переменные
+            export $(grep -Ev '^\s*(#|$)' .env.backend | xargs)
+            export $(grep -Ev '^\s*(#|$)' .env.frontend | xargs)
             docker-compose down --remove-orphans
             docker-compose up -d --build --no-cache
             docker image prune -f
