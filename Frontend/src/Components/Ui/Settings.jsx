@@ -1,13 +1,14 @@
+
 import { useUserStore } from "../../Store/Index.js";
 import { useState, useEffect } from "react";
 import EmptyAvatar from "./EmptyAvatar.jsx";
 import Line from "./Line.jsx";
 import InputLabel from "./InputLabel.jsx";
 import Input from "./Input.jsx";
-import { updateUserData, updateAvatar } from "../../Api/UserApi.js";
+import { updateUserData } from "../../Api/UserApi.js";
 
 function Settings() {
-  const { user, setUser } = useUserStore();
+  const { user, setUser, updateUserAvatar } = useUserStore();
 
   const [originalForm, setOriginalForm] = useState({
     login: user.login || "",
@@ -82,9 +83,8 @@ function Settings() {
     formData.append("avatar", file);
 
     try {
-      const response = await updateAvatar(formData);
+      const response = await updateUserAvatar(formData);
       if (response?.success) {
-        setUser({ ...user, avatar: response.avatar });
         setErrors((prev) => ({ ...prev, avatar: "" }));
       } else {
         setAvatarPreview(user.avatar || ""); // Revert to previous avatar on failure
@@ -224,8 +224,8 @@ function Settings() {
           disabled={!isSaveButtonActive}
           onClick={handleSubmit}
           className={`p-[12px] px-[40px] ${
-            isSaveButtonActive ? "bg-primary hover-anim" : "bg-container"
-          } rounded-[10px] text-[#fff]`}
+  isSaveButtonActive ? "bg-primary hover-anim" : "bg-container"
+} rounded-[10px] text-[#fff]`}
         >
           Save
         </button>

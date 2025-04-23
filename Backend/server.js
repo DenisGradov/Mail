@@ -34,7 +34,7 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/mail', mailRoutes);
 app.use('/api/users', userRoutes);
-
+app.use("/avatars", express.static(path.join(__dirname, "DataBase/avatars")));
 // Создание БД и таблицы
 initializeDB();
 

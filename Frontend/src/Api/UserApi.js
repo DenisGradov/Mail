@@ -50,4 +50,3 @@ export const updateAvatar = async (formData) => {
     return { error: "Network error occurred. Please try again later." };
   }
 };
-

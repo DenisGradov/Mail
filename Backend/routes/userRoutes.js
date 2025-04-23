@@ -37,33 +37,42 @@ router.post('/upload-avatar', upload, async (req, res) => {
   try {
     const user = await getUserByToken(token);
     if (!user) {
-      return res.status(401).json({ error: "Invalid token" });
+      return res.status(401).json({ error: "Недействительный токен" });
     }
 
-    const fileExtension = path.extname(req.file.originalname);  // Получаем расширение файла
-    const fileName = `${user.id}${fileExtension}`;  // Название файла будет ID пользователя + расширение
+    const fileExtension = path.extname(req.file.originalname); // Получаем расширение файла
+    const fileName = `${user.id}${fileExtension}`; // Название файла: ID пользователя + расширение
+    const filePath = path.join(__dirname, "..", "DataBase", "avatars", fileName);
 
-    const filePath = path.join(__dirname, '..', 'DataBase', fileName);
+    // Перемещаем файл в папку avatars
+    try {
+      fs.renameSync(req.file.path, filePath);
+    } catch (err) {
+      console.error("Ошибка при сохранении файла:", err);
+      return res.status(500).json({ error: "Не удалось сохранить аватарку" });
+    }
 
-    fs.renameSync(req.file.path, filePath);
-
-    await updateUser(user.id, { avatar: fileName });
+    // Проверяем, существует ли файл
+    if (!existsSync(filePath)) {
+      console.error("Файл аватарки не найден после сохранения:", filePath);
+      return res.status(500).json({ error: "Ошибка при сохранении аватарки" });
+    }
 
     const avatarUrl = `/avatars/${fileName}`;
+    await updateUser(user.id, { avatar: avatarUrl });
     let avatarBase64 = null;
-    if (user.avatar) {
-      const avatarPath = path.join(__dirname, '..', 'DataBase', user.avatar);
-      if (existsSync(avatarPath)) {
-        const avatarFile = readFileSync(avatarPath);
-        const avatarExtension = path.extname(user.avatar).substring(1);
-        const mimeType = `image/${avatarExtension}`;
-        avatarBase64 = `data:${mimeType};base64,${avatarFile.toString('base64')}`;
-      }
+    const avatarPath = path.join(__dirname, '..', 'DataBase', avatarUrl);
+    if (existsSync(avatarPath)) {
+      const avatarFile = readFileSync(avatarPath);
+      const avatarExtension = path.extname(user.avatar).substring(1);
+      const mimeType = `image/${avatarExtension}`;
+      avatarBase64 = `data:${mimeType};base64,${avatarFile.toString('base64')}`;
     }
+    console.log("Аватарка успешно сохранена:", avatarUrl);
     res.status(200).json({ success: true, avatar: avatarBase64 });
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ error: 'Internal server error' });
+    console.error("Ошибка при загрузке аватарки:", err);
+    res.status(500).json({ error: "Внутренняя ошибка сервера" });
   }
 });
 

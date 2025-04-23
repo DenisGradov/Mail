@@ -5,6 +5,17 @@ import {
   loginUser as apiLoginUser,
   logoutUser as apiLogoutUser,
 } from "../Api/Auth.js";
+import { updateAvatar } from "../Api/UserApi.js";
+
+// Функция для проверки доступности изображения
+const isImageAccessible = async (url) => {
+  try {
+    const response = await fetch(url, { method: "HEAD" });
+    return response.ok;
+  } catch {
+    return false;
+  }
+};
 
 export const useUserStore = create(
   persist(
@@ -15,6 +26,30 @@ export const useUserStore = create(
       user: {},
       setUser: (userData) => {
         set({ user: { ...userData } });
+      },
+
+      updateUserAvatar: async (formData) => {
+        try {
+          const response = await updateAvatar(formData);
+          if (response?.success && response.avatar) {
+            const avatarUrl = response.avatar
+            const isAccessible = await isImageAccessible(avatarUrl);
+            if (isAccessible) {
+              set((state) => ({
+                user: { ...state.user, avatar: avatarUrl },
+              }));
+              return { ...response, avatar: avatarUrl };
+            } else {
+              console.error("URL аватарки недоступен:", avatarUrl);
+              return { error: "Загруженное изображение недоступно." };
+            }
+          }
+          console.error("Ошибка в ответе API:", response?.error || "Нет данных об аватарке");
+          return response || { error: "Не удалось загрузить аватарку." };
+        } catch (err) {
+          console.error("Ошибка при обновлении аватарки в сторе:", err);
+          return { error: err.message || "Ошибка сети. Попробуйте еще раз." };
+        }
       },
 
       checkAuth: async () => {
@@ -48,7 +83,7 @@ export const useUserStore = create(
 
       changeTheme: () => {
         const currentTheme = get().theme;
-        set({ theme: currentTheme==="theme-black"?"theme-white":"theme-black" });
+        set({ theme: currentTheme === "theme-black" ? "theme-white" : "theme-black" });
       },
 
       loginUser: async (username, password, remember = false, captcha) => {
@@ -75,7 +110,6 @@ export const useUserStore = create(
         return response;
       },
 
-
       logoutUser: async () => {
         const response = await apiLogoutUser();
         if (response && response.status === 200) {
@@ -86,11 +120,9 @@ export const useUserStore = create(
           });
         }
       },
-
-
     }),
     {
-      name: "user-storage", // 🔒 ключ в localStorage
+      name: "user-storage",
       partialize: (state) => ({
         auth: state.auth,
         theme: state.theme,

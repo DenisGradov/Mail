@@ -54,7 +54,7 @@ export default function MainWindow() {
 
   const [isMailOpen, setIsMailOpen] = useState(false);
   const handleMailOpen = (mail) => {
-
+    if (!mail) return
     toggleViewed(mail.id, true);
     setIsMailOpen(mail)
   }
