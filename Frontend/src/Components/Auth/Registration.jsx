@@ -118,13 +118,13 @@ export default function Registration({ changeAuthorizationState }) {
       } else {
         setErrors((e) => ({
           ...e,
-          login: "Server error occurred. Please try again.",
+          login: "A server error occurred. Please try again.",
         }));
       }
     } catch {
       setErrors((e) => ({
         ...e,
-        login: "Network error occurred. Please try again.",
+        login: "A network error occurred. Please try again.",
       }));
     } finally {
       hideLoader();
@@ -200,29 +200,34 @@ export default function Registration({ changeAuthorizationState }) {
           </label>
           {errors.offer && <p className="text-red-500 mt-1">{errors.offer}</p>}
 
-          <CaptchaWidget
-            onSuccess={handleCaptcha}
-            onError={(msg) => {
-              setCaptchaErrorCount((c) => c + 1);
-              setErrors((e) => ({
-                ...e,
-                captcha: msg,
-              }));
-            }}
-            onExpire={() => {
-              setCaptchaToken("");
-              setErrors((e) => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
-            }}
-            error={errors.captcha}
-          />
-          {captchaErrorCount >= 3 && (
-            <button
-              type="button"
-              onClick={() => window.location.reload()}
-              className="text-blue-500 mt-2"
-            >
-              Refresh CAPTCHA
-            </button>
+          {!CAPTCHA_SKIP && (
+            <>
+              <CaptchaWidget
+                onSuccess={handleCaptcha}
+                onError={(msg) => {
+                  setCaptchaErrorCount((c) => c + 1);
+                  setErrors((e) => ({
+                    ...e,
+                    captcha: msg,
+                  }));
+                }}
+                onExpire={() => {
+                  setCaptchaToken("");
+                  setErrors((e) => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
+                }}
+                error={errors.captcha}
+              />
+              {captchaErrorCount >= 3 && (
+                <button
+                  type="button"
+                  onClick={() => window.location.reload()}
+                  className="text-blue-500 mt-2"
+                >
+                  Refresh CAPTCHA
+                </button>
+              )}
+              {errors.captcha && <p className="text-red-500 mt-1">{errors.captcha}</p>}
+            </>
           )}
 
           <div className="mt-6 hover:scale-105 transition">
