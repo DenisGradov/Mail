@@ -1,25 +1,55 @@
-- name: Run docker-compose on server
-  uses: appleboy/ssh-action@v1.2.2
-  with:
-    host: ${{ secrets.SSH_HOST }}
-    username: ${{ secrets.SSH_USER }}
-    key: ${{ secrets.SSH_KEY }}
-    port: ${{ secrets.SSH_PORT || 22 }}
-    script: |
-      set -e
-      cd /opt/mail
-      # Проверяем наличие .env файлов
-      if [ ! -f .env.frontend ]; then
-        echo "Error: .env.frontend not found"
-        exit 1
-      fi
-      if [ ! -f .env.backend ]; then
-        echo "Error: .env.backend not found"
-        exit 1
-      fi
-      # Загружаем переменные
-      export $(grep -Ev '^\s*(#|$)' .env.backend  | xargs)
-      export $(grep -Ev '^\s*(#|$)' .env.frontend | xargs)
-      docker-compose down --remove-orphans
-      docker-compose up -d --build --no-cache
-      docker image prune -f
+name: Simple-SSH-Deploy
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Check .env file
+        run: |
+          if [ ! -f .env ]; then
+            echo "Error: .env file not found"
+            exit 1
+          fi
+
+      - name: Sync code to server via SCP
+        uses: appleboy/scp-action@v0.1.4
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          source: "./"
+          target: "/opt/mail"
+          strip_components: 1
+          recursive: true
+          exclude: |
+            .git/
+            *.db
+
+      - name: Run docker-compose on server
+        uses: appleboy/ssh-action@v1.2.2
+        with:
+          host: ${{ secrets.SSH_HOST }}
+          username: ${{ secrets.SSH_USER }}
+          key: ${{ secrets.SSH_KEY }}
+          port: ${{ secrets.SSH_PORT || 22 }}
+          script: |
+            set -e
+            cd /opt/mail
+            if [ ! -f .env ]; then
+              echo "Error: .env file not found"
+              exit 1
+            fi
+            export $(grep -Ev '^\s*(#|$)' .env | xargs)
+            docker-compose down --remove-orphans
+            docker-compose up -d --build --no-cache
+            docker image prune -f
