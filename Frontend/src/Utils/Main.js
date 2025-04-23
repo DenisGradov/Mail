@@ -1,3 +1,9 @@
+export function copyToClipboard(text) {
+  return navigator.clipboard.writeText(text)
+    .then(() => true)
+    .catch(() => false);
+}
+
 export function stripHtml(html) {
   const tmp = document.createElement('div');
   tmp.innerHTML = html;

@@ -1,20 +1,12 @@
-// DataBase/functions/getUserByToken.js
-const db = require('../db');
-
+const db = require("../db");
 
 async function getUserByToken(token) {
   return new Promise((resolve, reject) => {
-    db.get(
-      `SELECT id, login, email, name, surname, status, emails, sent_emails, avatar
-       FROM users
-       WHERE auth = ?`,
-      [token],
-      (err, row) => {
-        if (err) return reject(err);
-        if (!row) return resolve(null);
-        resolve(row);
-      }
-    );
+    const query = "SELECT * FROM users WHERE auth = ?";
+    db.get(query, [token], (err, row) => {
+      if (err) return reject(err);
+      resolve(row);
+    });
   });
 }
 

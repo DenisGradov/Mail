@@ -1,18 +1,18 @@
 const express = require("express");
 const router = express.Router();
 const { getUserByToken } = require("../DataBase/functions/getUserByToken");
-const { loginUser } = require("../DataBase/functions/loginUser"); // Импортируем loginUser
+const { loginUser } = require("../DataBase/functions/loginUser");
 const { hashPassword } = require("../Utils/hashPassword");
 const { updateUser } = require("../DataBase/functions/updateUser");
 const { isFieldUnique } = require("../DataBase/functions/isFieldUnique");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const {existsSync, readFileSync} = require("node:fs");
+const { existsSync, readFileSync } = require("node:fs");
 
 const upload = multer({
-  dest: 'DataBase/avatars/',  // Папка для загрузки аватаров
-  limits: { fileSize: 10 * 1024 * 1024 },  // Максимальный размер 10 MB
+  dest: 'DataBase/avatars/',
+  limits: { fileSize: 10 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const validTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!validTypes.includes(file.mimetype)) {
@@ -20,13 +20,11 @@ const upload = multer({
     }
     cb(null, true);
   }
-}).single('avatar');  // Название поля, по которому загружается файл
+}).single('avatar');
 
-
-// Загрузка аватара
 router.post('/upload-avatar', upload, async (req, res) => {
   if (!req.file) {
-    return res.status(400).json({ error: "No file uploaded" }); // Возвращаем ошибку, если файл не передан
+    return res.status(400).json({ error: "No file uploaded" });
   }
 
   const token = req.cookies?.auth_token;
@@ -40,11 +38,10 @@ router.post('/upload-avatar', upload, async (req, res) => {
       return res.status(401).json({ error: "Недействительный токен" });
     }
 
-    const fileExtension = path.extname(req.file.originalname); // Получаем расширение файла
-    const fileName = `${user.id}${fileExtension}`; // Название файла: ID пользователя + расширение
+    const fileExtension = path.extname(req.file.originalname);
+    const fileName = `${user.id}${fileExtension}`;
     const filePath = path.join(__dirname, "..", "DataBase", "avatars", fileName);
 
-    // Перемещаем файл в папку avatars
     try {
       fs.renameSync(req.file.path, filePath);
     } catch (err) {
@@ -52,7 +49,6 @@ router.post('/upload-avatar', upload, async (req, res) => {
       return res.status(500).json({ error: "Не удалось сохранить аватарку" });
     }
 
-    // Проверяем, существует ли файл
     if (!existsSync(filePath)) {
       console.error("Файл аватарки не найден после сохранения:", filePath);
       return res.status(500).json({ error: "Ошибка при сохранении аватарки" });
@@ -75,9 +71,6 @@ router.post('/upload-avatar', upload, async (req, res) => {
     res.status(500).json({ error: "Внутренняя ошибка сервера" });
   }
 });
-
-
-
 
 router.post("/update", async (req, res) => {
   const { oldPassword, newPassword, login, name, surname, avatar } = req.body;
@@ -149,6 +142,5 @@ router.post("/update", async (req, res) => {
     res.status(200).json({ success: false, message: "Internal server error" });
   }
 });
-
 
 module.exports = router;

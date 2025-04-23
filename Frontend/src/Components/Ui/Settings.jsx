@@ -1,4 +1,3 @@
-
 import { useUserStore } from "../../Store/Index.js";
 import { useState, useEffect } from "react";
 import EmptyAvatar from "./EmptyAvatar.jsx";
@@ -6,6 +5,8 @@ import Line from "./Line.jsx";
 import InputLabel from "./InputLabel.jsx";
 import Input from "./Input.jsx";
 import { updateUserData } from "../../Api/UserApi.js";
+import Authentication from "../Auth/Authentication.jsx";
+import { setup2FA, disable2FA } from "../../Api/Auth.js";
 
 function Settings() {
   const { user, setUser, updateUserAvatar } = useUserStore();
@@ -34,6 +35,9 @@ function Settings() {
   });
 
   const [isSaveButtonActive, setSaveButtonActive] = useState(false);
+  const [addFA, setAddFA] = useState(false);
+  const [qrCode, setQrCode] = useState("");
+  const [secret, setSecret] = useState("");
 
   const isFormChanged = () => {
     return (
@@ -43,6 +47,37 @@ function Settings() {
       form.oldPassword ||
       form.newPassword
     );
+  };
+
+  const handleAddFa = async () => {
+    if (user.two_factor_enabled) {
+      try {
+        const response = await disable2FA();
+        if (response.data.success) {
+          setUser({ ...user, two_factor_enabled: 0 });
+          setQrCode("");
+          setSecret("");
+          setAddFA(false);
+        } else {
+          setErrors((prev) => ({ ...prev, general: response.data.error || "Failed to disable 2FA" }));
+        }
+      } catch (err) {
+        setErrors((prev) => ({ ...prev, general: err.message || "Network error occurred" }));
+      }
+    } else {
+      try {
+        const response = await setup2FA();
+        if (response.data.qrCode && response.data.secret) {
+          setQrCode(response.data.qrCode);
+          setSecret(response.data.secret);
+          setAddFA(true);
+        } else {
+          setErrors((prev) => ({ ...prev, general: response.data.error || "Failed to setup 2FA" }));
+        }
+      } catch (err) {
+        setErrors((prev) => ({ ...prev, general: err.message || "Network error occurred" }));
+      }
+    }
   };
 
   const handleChange = (e) => {
@@ -57,7 +92,7 @@ function Settings() {
   const handleAvatarChange = async (e) => {
     const file = e.target.files[0];
     const validTypes = ["image/jpeg", "image/png", "image/gif"];
-    const maxSize = 10 * 1024 * 1024; // 10MB
+    const maxSize = 10 * 1024 * 1024;
 
     if (!file) {
       setErrors((prev) => ({ ...prev, avatar: "No file selected." }));
@@ -74,11 +109,9 @@ function Settings() {
       return;
     }
 
-    // Create a preview URL for the selected image
     const previewUrl = URL.createObjectURL(file);
     setAvatarPreview(previewUrl);
 
-    // Prepare FormData for upload
     const formData = new FormData();
     formData.append("avatar", file);
 
@@ -87,12 +120,12 @@ function Settings() {
       if (response?.success) {
         setErrors((prev) => ({ ...prev, avatar: "" }));
       } else {
-        setAvatarPreview(user.avatar || ""); // Revert to previous avatar on failure
+        setAvatarPreview(user.avatar || "");
         setErrors((prev) => ({ ...prev, avatar: response?.error || "Failed to upload avatar." }));
       }
     } catch (err) {
-      setAvatarPreview(user.avatar || ""); // Revert to previous avatar on failure
-      setErrors((prev) => ({ ...prev, avatar: err.message || "Network error occurred. Please try again later." }));
+      setAvatarPreview(user.avatar || "");
+      setErrors((prev) => ({ ...prev, avatar: err.message || "Network error occurred. Please try again." }));
     }
   };
 
@@ -140,10 +173,10 @@ function Settings() {
         });
         alert("Your profile has been updated successfully.");
       } else {
-        setErrors((prev) => ({ ...prev, general: response.message || "An error occurred. Please try again later." }));
+        setErrors((prev) => ({ ...prev, general: response.message || "An error occurred. Please try again." }));
       }
     } catch (err) {
-      setErrors((prev) => ({ ...prev, general: err.message || "Network error occurred. Please try again later." }));
+      setErrors((prev) => ({ ...prev, general: err.message || "Network error occurred. Please try again." }));
     }
   };
 
@@ -180,13 +213,13 @@ function Settings() {
   useEffect(() => {
     return () => {
       if (avatarPreview && avatarPreview.startsWith("blob:")) {
-        URL.revokeObjectURL(avatarPreview); // Clean up blob URL
+        URL.revokeObjectURL(avatarPreview);
       }
     };
   }, [avatarPreview]);
 
   return (
-    <div className="w-full h-full p-[15px] max-w-[1100px] m-auto overflow-auto ">
+    <div className="w-full h-full p-[15px] max-w-[1100px] m-auto overflow-auto">
       <div className="flex items-center">
         <div>
           {avatarPreview ? (
@@ -212,9 +245,11 @@ function Settings() {
 
       <Line className="my-[32px]" />
 
-      <div className="flex  items-center flex-wrap justify-center 840px:text-left text-center 840px:justify-between ">
-        <div className="flex flex-col ">
-          <span className="text-text-primary text-[18px]">Account - <span className="text-primary text-[16px]">{user.email}</span></span>
+      <div className="flex items-center flex-wrap justify-center 840px:text-left text-center 840px:justify-between">
+        <div className="flex flex-col">
+          <span className="text-text-primary text-[18px]">
+            Account - <span className="text-primary text-[16px]">{user.email}</span>
+          </span>
           <span className="text-text-secondary-60 text-[16px]">
             The section where you can manage the main parameters of your profile
           </span>
@@ -224,8 +259,8 @@ function Settings() {
           disabled={!isSaveButtonActive}
           onClick={handleSubmit}
           className={`p-[12px] px-[40px] ${
-  isSaveButtonActive ? "bg-primary hover-anim" : "bg-container"
-} rounded-[10px] text-[#fff]`}
+            isSaveButtonActive ? "bg-primary hover-anim" : "bg-container"
+          } rounded-[10px] text-[#fff]`}
         >
           Save
         </button>
@@ -304,7 +339,7 @@ function Settings() {
               className="w-full"
               name="oldPassword"
               type="password"
-              placeholder="old password"
+              placeholder="Old password"
               value={form.oldPassword}
               setValue={handleChange}
             />
@@ -316,7 +351,7 @@ function Settings() {
               name="newPassword"
               className="w-full"
               type="password"
-              placeholder="new password"
+              placeholder="New password"
               value={form.newPassword}
               setValue={handleChange}
             />
@@ -324,9 +359,44 @@ function Settings() {
           </div>
         </div>
       </div>
-
       {errors.general && (
         <div className="text-center text-red-500 mt-[20px]">{errors.general}</div>
+      )}
+      <Line className="my-[32px]" />
+      <div className="flex justify-between items-center bg-container p-[30px] rounded-[20px]">
+        <div className="flex items-center">
+          <img src="googl.svg" className="w-[50px]" alt="Google Authenticator" />
+          <div className="flex flex-col ml-[20px]">
+            <span className="text-[16px] font-medium text-text-primary">Google Authenticator: <span className={`text-[17px] ${user.two_factor_enabled ? "text-green-500" : "text-red-500"}`}>{user.two_factor_enabled ? "connected" : "disabled"}</span></span>
+            <span className="text-[15px] text-text-secondary-60">
+              Requires a code from an authenticator app when signing in and enhances account security.
+            </span>
+          </div>
+        </div>
+        <div>
+          <button
+            onClick={handleAddFa}
+            className="hover-anim py-[8px] px-[20px] text-primary border border-primary rounded-[10px]"
+          >
+            {user.two_factor_enabled ? "Disable" : "Connect"}
+          </button>
+        </div>
+      </div>
+
+      {addFA && (
+        <div className="absolute inset-0 z-40 w-full h-full">
+          <div className="w-full h-full bg-bg-main/60 backdrop-blur-sm"></div>
+          <Authentication
+            handleClose={() => {
+              setAddFA(false);
+              setQrCode("");
+              setSecret("");
+            }}
+            qrCode={qrCode}
+            secret={secret}
+            isSetup={true}
+          />
+        </div>
       )}
     </div>
   );

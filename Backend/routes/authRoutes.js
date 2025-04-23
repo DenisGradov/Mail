@@ -9,6 +9,8 @@ const { getUserByToken } = require("../DataBase/functions/getUserByToken");
 const { existsSync, readFileSync } = require("node:fs");
 const path = require("node:path");
 const rateLimit = require("express-rate-limit");
+const speakeasy = require("speakeasy");
+const QRCode = require("qrcode");
 
 const CAPTCHA_SKIP = process.env.VITE_CAPTCHA_SKIP === "true" && process.env.NODE_ENV !== "production";
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
@@ -22,9 +24,9 @@ if (CAPTCHA_SKIP) {
 }
 
 const loginLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 10, // Limit to 10 attempts per IP
-  message: "Too many login attempts. Please try again later.",
+  windowMs: 15 * 60 * 1000, // 15 минут
+  max: 20, // Максимум 10 попыток
+  message: { errors: { general: "Too many login attempts. Please try again later." } }, // JSON вместо строки
 });
 
 router.post("/logout", (req, res) => {
@@ -67,6 +69,7 @@ router.get("/verify-token", async (req, res) => {
       surname: user.surname,
       status: user.status,
       avatar: avatarBase64,
+      two_factor_enabled: user.two_factor_enabled,
     });
   } catch (err) {
     console.error(err);
@@ -99,7 +102,7 @@ async function verifyTurnstile(token, remoteIp) {
 }
 
 router.post("/login", loginLimiter, async (req, res) => {
-  const { username, password, remember, captcha } = req.body;
+  const { username, password, remember, captcha, totp_code } = req.body;
 
   if (!CAPTCHA_SKIP && (!captcha || !(await verifyTurnstile(captcha, req.ip)))) {
     return res.status(400).json({ errors: { captcha: "Captcha verification failed" } });
@@ -116,6 +119,23 @@ router.post("/login", loginLimiter, async (req, res) => {
     }
 
     const { token, user } = result;
+
+    if (user.two_factor_enabled) {
+      if (!totp_code) {
+        return res.status(206).json({ two_factor_required: true, userId: user.id });
+      }
+
+      const verified = speakeasy.totp.verify({
+        secret: user.two_factor_secret,
+        encoding: "base32",
+        token: totp_code,
+      });
+
+      if (!verified) {
+        return res.status(400).json({ errors: { totp_code: "Invalid 2FA code" } });
+      }
+    }
+
     res.cookie("auth_token", token, {
       httpOnly: true,
       maxAge: remember ? 1000 * 60 * 60 * 24 * 14 : undefined,
@@ -142,6 +162,7 @@ router.post("/login", loginLimiter, async (req, res) => {
       surname: user.surname,
       status: user.status,
       avatar: avatarBase64,
+      two_factor_enabled: user.two_factor_enabled,
     });
   } catch (err) {
     console.error(err);
@@ -183,6 +204,104 @@ router.post("/register", loginLimiter, async (req, res) => {
       secure: process.env.NODE_ENV === "production",
     });
     res.status(201).json({ userId });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/setup-2fa", async (req, res) => {
+  const token = req.cookies?.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+
+  try {
+    const user = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const secret = speakeasy.generateSecret({
+      name: `YourApp:${user.email}`,
+      issuer: "YourApp",
+    });
+
+    await require("../DataBase/functions/updateUser").updateUser(user.id, {
+      two_factor_secret: secret.base32,
+    });
+
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.json({
+      qrCode: qrCodeUrl,
+      secret: secret.base32,
+    });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/verify-2fa", async (req, res) => {
+  const { totp_code } = req.body;
+  const token = req.cookies?.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+
+  if (!totp_code) {
+    return res.status(400).json({ error: "TOTP code required" });
+  }
+
+  try {
+    const user = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    const verified = speakeasy.totp.verify({
+      secret: user.two_factor_secret,
+      encoding: "base32",
+      token: totp_code,
+    });
+
+    if (!verified) {
+      return res.status(400).json({ error: "Invalid 2FA code" });
+    }
+
+    await require("../DataBase/functions/updateUser").updateUser(user.id, {
+      two_factor_enabled: 1,
+    });
+
+    res.json({ success: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Internal server error" });
+  }
+});
+
+router.post("/disable-2fa", async (req, res) => {
+  const token = req.cookies?.auth_token;
+
+  if (!token) {
+    return res.status(401).json({ error: "No token provided" });
+  }
+
+  try {
+    const user = await getUserByToken(token);
+    if (!user) {
+      return res.status(401).json({ error: "Invalid token" });
+    }
+
+    await require("../DataBase/functions/updateUser").updateUser(user.id, {
+      two_factor_secret: '',
+      two_factor_enabled: 0,
+    });
+
+    res.json({ success: true });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Internal server error" });

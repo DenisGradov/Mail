@@ -25,9 +25,17 @@ async function updateUser(id, updatedData) {
     fieldsToUpdate.push("avatar = ?");
     params.push(updatedData.avatar);
   }
+  if (updatedData.two_factor_secret) {
+    fieldsToUpdate.push("two_factor_secret = ?");
+    params.push(updatedData.two_factor_secret);
+  }
+  if (typeof updatedData.two_factor_enabled !== 'undefined') {
+    fieldsToUpdate.push("two_factor_enabled = ?");
+    params.push(updatedData.two_factor_enabled);
+  }
 
   if (fieldsToUpdate.length === 0) {
-    return 0; // No changes to apply
+    return 0;
   }
 
   query += fieldsToUpdate.join(", ");

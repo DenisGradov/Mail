@@ -19,6 +19,7 @@ import ContextMenu from "./MainWindow/ContextMenu.jsx";
 import Pagination from "./MainWindow/Pagination.jsx";
 import MailActions from "./MainWindow/MailActions.jsx";
 import Line from "./Ui/Line.jsx";
+import Authentication from "./Auth/Authentication.jsx";
 
 export default function MainWindow() {
   const { logoutUser, user } = useUserStore();
@@ -30,7 +31,7 @@ export default function MainWindow() {
   const [selectedMails, setSelectedMails] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
-  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
   const [isMailOpen, setIsMailOpen] = useState(false);
   const [isContextWindowOpen, setIsContextWindowOpen] = useState({ state: false, x: 0, y: 0, id: "" });
   const [newMail, setNewMail] = useState(false);
