@@ -97,7 +97,7 @@ export default function Login({changeAuthorizationState}) {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center w-full h-full">
+    <div className="flex flex-col justify-center items-center w-full h-full p-[5px]">
       <Modal>
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
           <InputLabel text="Login"/>

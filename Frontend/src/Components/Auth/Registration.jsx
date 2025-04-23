@@ -132,7 +132,7 @@ export default function Registration({ changeAuthorizationState }) {
   };
 
   return (
-    <div className="flex flex-col justify-center items-center w-full h-full">
+    <div className="flex flex-col justify-center items-center w-full h-full p-[5px]">
       <Modal>
         <form onSubmit={handleSubmit} className="w-full max-w-md">
           <div className="grid grid-cols-2 gap-4">

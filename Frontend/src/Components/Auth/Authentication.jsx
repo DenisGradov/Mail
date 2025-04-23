@@ -223,7 +223,7 @@ function Authentication({ handleClose, qrCode, isSetup, secret }) {
   }, []);
 
   return (
-    <div className="flex flex-col justify-center items-center w-full h-full">
+    <div className="flex flex-col justify-center items-center w-full h-full p-[5px]">
       <div className="relative bg-container flex flex-col justify-center items-center max-w-[450px] w-full rounded-[24px] p-[30px]">
         <div className="flex justify-between w-full items-center">
           <div className="text-center cursor-pointer text-white" onClick={handleClose}>

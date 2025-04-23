@@ -363,11 +363,11 @@ function Settings() {
         <div className="text-center text-red-500 mt-[20px]">{errors.general}</div>
       )}
       <Line className="my-[32px]" />
-      <div className="flex justify-between items-center bg-container p-[30px] rounded-[20px]">
-        <div className="flex items-center">
+      <div className="flex 375px:flex-row flex-col 375px:justify-between items-center bg-container p-[30px] rounded-[20px]">
+        <div className="flex items-center 375px:flex-row flex-col">
           <img src="googl.svg" className="w-[50px]" alt="Google Authenticator" />
           <div className="flex flex-col ml-[20px]">
-            <span className="text-[16px] font-medium text-text-primary">Google Authenticator: <span className={`text-[17px] ${user.two_factor_enabled ? "text-green-500" : "text-red-500"}`}>{user.two_factor_enabled ? "connected" : "disabled"}</span></span>
+            <span className="text-[16px] font-medium text-text-primary 375px:my-[0] my-[12px]">Google Authenticator: <span className={`text-[17px] ${user.two_factor_enabled ? "text-green-500" : "text-red-500"}`}>{user.two_factor_enabled ? "connected" : "disabled"}</span></span>
             <span className="text-[15px] text-text-secondary-60">
               Requires a code from an authenticator app when signing in and enhances account security.
             </span>
@@ -376,7 +376,7 @@ function Settings() {
         <div>
           <button
             onClick={handleAddFa}
-            className="hover-anim py-[8px] px-[20px] text-primary border border-primary rounded-[10px]"
+            className="hover-anim py-[8px] px-[20px] text-primary border border-primary rounded-[10px]  375px:mt-[0] mt-[12px]"
           >
             {user.two_factor_enabled ? "Disable" : "Connect"}
           </button>
