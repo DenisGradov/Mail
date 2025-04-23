@@ -186,7 +186,7 @@ function Settings() {
   }, [avatarPreview]);
 
   return (
-    <div className="w-full h-full p-[15px] max-w-[1100px] m-auto mt-[50px] overflow-auto max-h-[100vh]">
+    <div className="w-full h-full p-[15px] max-w-[1100px] m-auto overflow-auto ">
       <div className="flex items-center">
         <div>
           {avatarPreview ? (
@@ -212,8 +212,8 @@ function Settings() {
 
       <Line className="my-[32px]" />
 
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col">
+      <div className="flex  items-center flex-wrap justify-center 840px:text-left text-center 840px:justify-between ">
+        <div className="flex flex-col ">
           <span className="text-text-primary text-[18px]">Account - <span className="text-primary text-[16px]">{user.email}</span></span>
           <span className="text-text-secondary-60 text-[16px]">
             The section where you can manage the main parameters of your profile

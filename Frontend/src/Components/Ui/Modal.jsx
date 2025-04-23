@@ -1,6 +1,6 @@
 import PropTypes from "prop-types";
 import Logo from "./Logo.jsx";
-import ThemeChanger from "../ThemeChanger.jsx";
+import ThemeChanger from "./ThemeChanger.jsx";
 
 function Modal({children}) {
 

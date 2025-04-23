@@ -1,22 +1,18 @@
+import PropTypes from "prop-types";
 import Modal from "../Ui/Modal.jsx";
 import { useState } from "react";
-import {
-  clearErrorOnInputChange,
-  handleGeneratePassword,
-  validateInputs,
-} from "../../Utils/Main.js";
+import { clearErrorOnInputChange, handleGeneratePassword, validateInputs } from "../../Utils/Main.js";
 import { useLoaderStore } from "../../Store/Loader.js";
 import { useUserStore } from "../../Store/User.js";
 import InputLabel from "../Ui/InputLabel.jsx";
 import Input from "../Ui/Input.jsx";
 import Button from "../Ui/Button.jsx";
-import { Turnstile } from "@marsidev/react-turnstile";
-import PropTypes from "prop-types";
-import {registerUser} from "../../Api/Auth.js";
+import CaptchaWidget from "../Ui/CaptchaWidget.jsx";
+import { registerUser } from "../../Api/Auth.js";
 
 export default function Registration({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
-  const {  checkAuth } = useUserStore();
+  const { checkAuth } = useUserStore();
 
   const [form, setForm] = useState({
     name: "",
@@ -34,6 +30,7 @@ export default function Registration({ changeAuthorizationState }) {
     captcha: "",
   });
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaErrorCount, setCaptchaErrorCount] = useState(0);
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -56,29 +53,31 @@ export default function Registration({ changeAuthorizationState }) {
 
   const handleCaptcha = (token) => {
     setCaptchaToken(token);
+    setCaptchaErrorCount(0);
     if (errors.captcha) {
       setErrors((e) => ({ ...e, captcha: "" }));
     }
   };
 
-  const CAPTCHA_SKIP = import.meta.env.VITE_CAPTCHA_SKIP === 'true';
+  const CAPTCHA_SKIP = import.meta.env.VITE_CAPTCHA_SKIP === "true";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rules = {
-      name:     { required: true, type: "text",    minLength: 2, message: "Name must be at least 2 characters" },
-      surname:  { required: true, type: "text",    minLength: 2, message: "Surname must be at least 2 characters" },
-      login:    { required: true, type: "text",    minLength: 5, message: "Login must be at least 5 characters" },
-      password: { required: true, type: "text",    minLength: 5, message: "Password must be at least 5 characters" },
-      offer:    { required: true, type: "boolean",                 message: "You must accept the terms" },
+      name: { required: true, type: "text", minLength: 2, message: "Name must be at least 2 characters" },
+      surname: { required: true, type: "text", minLength: 2, message: "Surname must be at least 2 characters" },
+      login: { required: true, type: "text", minLength: 5, message: "Login must be at least 5 characters" },
+      password: { required: true, type: "text", minLength: 5, message: "Password must be at least 5 characters" },
+      offer: { required: true, type: "boolean", message: "You must accept the terms" },
     };
     const v = validateInputs(form, rules);
     const newErrors = {
-      name:     v.name     || "",
-      surname:  v.surname  || "",
-      login:    v.login    || "",
+      name: v.name || "",
+      surname: v.surname || "",
+      login: v.login || "",
       password: v.password || "",
-      offer:    v.offer    || "",
-      captcha:  CAPTCHA_SKIP ? "" : captchaToken ? "" : "Please complete the captcha",
+      offer: v.offer || "",
+      captcha: CAPTCHA_SKIP ? "" : captchaToken ? "" : "Please complete the captcha",
     };
     if (
       newErrors.name ||
@@ -94,12 +93,12 @@ export default function Registration({ changeAuthorizationState }) {
     try {
       showLoader();
       const resp = await registerUser({
-        name:     form.name,
-        surname:  form.surname,
-        login:    form.login,
+        name: form.name,
+        surname: form.surname,
+        login: form.login,
         password: form.password,
-        offer:    form.offer,
-        captcha:  captchaToken,
+        offer: form.offer,
+        captcha: captchaToken,
       });
       if (resp.status === 200 || resp.status === 201) {
         await checkAuth();
@@ -109,11 +108,12 @@ export default function Registration({ changeAuthorizationState }) {
         const be = resp.response.data.errors || {};
         setErrors((e) => ({
           ...e,
-          name:     be.name     || "",
-          surname:  be.surname  || "",
-          login:    be.login    || "",
+          name: be.name || "",
+          surname: be.surname || "",
+          login: be.login || "",
           password: be.password || "",
-          offer:    be.offer    || "",
+          offer: be.offer || "",
+          captcha: be.captcha || "",
         }));
       } else {
         setErrors((e) => ({
@@ -131,7 +131,6 @@ export default function Registration({ changeAuthorizationState }) {
     }
   };
 
-  const { theme } = useUserStore();
   return (
     <div className="flex flex-col justify-center items-center w-full h-full">
       <Modal>
@@ -175,9 +174,9 @@ export default function Registration({ changeAuthorizationState }) {
           {errors.login && <p className="text-red-500 mt-1">{errors.login}</p>}
 
           <div className="mt-4 flex justify-between items-center">
-            <InputLabel text="Password"/>
+            <InputLabel text="Password" />
             <div className="hover-anim" onClick={handleGenerate}>
-              <InputLabel text={'Generate'}/>
+              <InputLabel text="Generate" />
             </div>
           </div>
           <Input
@@ -201,23 +200,30 @@ export default function Registration({ changeAuthorizationState }) {
           </label>
           {errors.offer && <p className="text-red-500 mt-1">{errors.offer}</p>}
 
-          <div className="mt-4 flex flex-col justify-center items-center">
-            <Turnstile
-              siteKey="0x4AAAAAABOjyDX12nSDcMwh"
-              onSuccess={handleCaptcha}
-              onError={() => setErrors(e => ({
+          <CaptchaWidget
+            onSuccess={handleCaptcha}
+            onError={(msg) => {
+              setCaptchaErrorCount((c) => c + 1);
+              setErrors((e) => ({
                 ...e,
-                captcha: !CAPTCHA_SKIP&&"Captcha error. Try again."
-              }))}
-              onExpire={() => {
-                setCaptchaToken("");
-                setErrors(e => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
-              }}
-              options={{ theme: theme === "theme-black" ? "dark" : "light" }}
-            />
-
-          </div>
-          {errors.captcha && <p className="flex items-center justify-center text-red-500 mt-1">{errors.captcha}</p>}
+                captcha: msg,
+              }));
+            }}
+            onExpire={() => {
+              setCaptchaToken("");
+              setErrors((e) => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
+            }}
+            error={errors.captcha}
+          />
+          {captchaErrorCount >= 3 && (
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              className="text-blue-500 mt-2"
+            >
+              Refresh CAPTCHA
+            </button>
+          )}
 
           <div className="mt-6 hover:scale-105 transition">
             <Button type="submit" className="w-full">

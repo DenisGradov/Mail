@@ -1,3 +1,4 @@
+import PropTypes from "prop-types";
 import Modal from "../Ui/Modal.jsx";
 import { useState } from "react";
 import { validateInputs } from "../../Utils/Main.js";
@@ -6,8 +7,7 @@ import { useUserStore } from "../../Store/User.js";
 import InputLabel from "../Ui/InputLabel.jsx";
 import Input from "../Ui/Input.jsx";
 import Button from "../Ui/Button.jsx";
-import { Turnstile } from "@marsidev/react-turnstile";
-import PropTypes from "prop-types";
+import CaptchaWidget from "../Ui/CaptchaWidget.jsx";
 
 export default function Login({ changeAuthorizationState }) {
   const { showLoader, hideLoader } = useLoaderStore();
@@ -16,6 +16,8 @@ export default function Login({ changeAuthorizationState }) {
   const [form, setForm] = useState({ login: "", password: "", remember: false });
   const [errors, setErrors] = useState({ login: "", password: "", captcha: "" });
   const [captchaToken, setCaptchaToken] = useState("");
+  const [captchaErrorCount, setCaptchaErrorCount] = useState(0);
+  const [captchaResetKey, setCaptchaResetKey] = useState(Date.now().toString()); // Ключ для сброса капчи
 
   const handleChange = (e) => {
     const { name, type, value, checked } = e.target;
@@ -27,22 +29,31 @@ export default function Login({ changeAuthorizationState }) {
 
   const handleCaptcha = (token) => {
     setCaptchaToken(token);
+    setCaptchaErrorCount(0);
     if (errors.captcha) {
-      setErrors((e) => ({...e, captcha: ""}));
+      setErrors((e) => ({ ...e, captcha: "" }));
     }
-  }
-  const CAPTCHA_SKIP = import.meta.env.VITE_CAPTCHA_SKIP === 'true';
+  };
+
+  const resetCaptcha = () => {
+    setCaptchaToken("");
+    setCaptchaResetKey(Date.now().toString()); // Меняем ключ для перемонтирования
+    setErrors((e) => ({ ...e, captcha: "Пожалуйста, пройдите капчу заново." }));
+  };
+
+  const CAPTCHA_SKIP = import.meta.env.VITE_CAPTCHA_SKIP === "true";
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     const rules = {
-      login:    { required: true, type: "text", minLength: 5, message: "Login must be at least 5 characters" },
-      password: { required: true, type: "text", minLength: 5, message: "Password must be at least 5 characters" },
+      login: { required: true, type: "text", minLength: 5, message: "Логин должен содержать минимум 5 символов" },
+      password: { required: true, type: "text", minLength: 5, message: "Пароль должен содержать минимум 5 символов" },
     };
     const v = validateInputs(form, rules);
     const newErrors = {
-      login:    v.login    || "",
+      login: v.login || "",
       password: v.password || "",
-      captcha:  CAPTCHA_SKIP ? "" : captchaToken ? "" : "Please complete the captcha",
+      captcha: CAPTCHA_SKIP ? "" : captchaToken ? "" : "Пожалуйста, пройдите капчу",
     };
     if (newErrors.login || newErrors.password || newErrors.captcha) {
       setErrors(newErrors);
@@ -57,42 +68,48 @@ export default function Login({ changeAuthorizationState }) {
         }
         return;
       }
+      // Сбрасываем капчу при любой серверной ошибке
+      resetCaptcha();
       if (response.response?.status === 401) {
-        setErrors({ login: "Invalid login or password", password: "Invalid login or password", captcha: "" });
+        const be = response.response.data.errors || {};
+        setErrors({
+          login: be.login || "Неверный логин или пароль",
+          password: be.password || "Неверный логин или пароль",
+          captcha: be.captcha || "",
+        });
       } else {
-        setErrors((e) => ({ ...e, login: "Server error occurred. Please try again." }));
+        setErrors((e) => ({ ...e, login: "Произошла ошибка сервера. Попробуйте снова." }));
       }
     } catch {
-      setErrors({ login: "Network error occurred. Please try again.", password: "", captcha: "" });
+      resetCaptcha();
+      setErrors({ login: "Произошла сетевая ошибка. Попробуйте снова.", password: "", captcha: "" });
     } finally {
       hideLoader();
     }
   };
 
-
-  const { theme } = useUserStore();
   return (
     <div className="flex flex-col justify-center items-center w-full h-full">
       <Modal>
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
-          <InputLabel text="Login" />
+          <InputLabel text="Логин" />
           <div className={`mt-2 ${errors.login ? "border-red-600 border-2 rounded" : ""}`}>
             <Input
               name="login"
               type="text"
-              placeholder="Enter your login"
+              placeholder="Введите ваш логин"
               value={form.login}
               setValue={handleChange}
             />
           </div>
           {errors.login && <p className="text-red-500 mt-1">{errors.login}</p>}
 
-          <InputLabel text="Password" className="mt-4" />
+          <InputLabel text="Пароль" className="mt-4" />
           <div className={`mt-2 ${errors.password ? "border-red-600 border-2 rounded" : ""}`}>
             <Input
               name="password"
               type="password"
-              placeholder="Enter your password"
+              placeholder="Введите ваш пароль"
               value={form.password}
               setValue={handleChange}
             />
@@ -107,39 +124,48 @@ export default function Login({ changeAuthorizationState }) {
                 checked={form.remember}
                 onChange={handleChange}
               />
-              <span className="ml-2">Remember me</span>
+              <span className="ml-2">Запомнить меня</span>
             </label>
           </div>
 
-          <div className="mt-4 flex flex-col justify-center items-center">
-            <Turnstile
-              siteKey="0x4AAAAAABOjyDX12nSDcMwh"
-              onSuccess={handleCaptcha}
-              onError={() => setErrors(e => ({
+          <CaptchaWidget
+            reset={captchaResetKey}
+            onSuccess={handleCaptcha}
+            onError={(msg) => {
+              setCaptchaErrorCount((c) => c + 1);
+              setErrors((e) => ({
                 ...e,
-                captcha: !CAPTCHA_SKIP&&"Captcha error. Try again."
-              }))}
-              onExpire={() => {
-                setCaptchaToken("");
-                setErrors(e => ({ ...e, captcha: "Captcha is out of date. Please update the widget." }));
-              }}
-              options={{ theme: theme === "theme-black" ? "dark" : "light" }}
-            />
-          </div>
-          {errors.captcha && <p className="flex items-center justify-center text-red-500 mt-1">{errors.captcha}</p>}
+                captcha: msg,
+              }));
+            }}
+            onExpire={() => {
+              setCaptchaToken("");
+              setErrors((e) => ({ ...e, captcha: "Капча устарела. Пожалуйста, обновите виджет." }));
+            }}
+            error={errors.captcha}
+          />
+          {captchaErrorCount >= 3 && (
+            <button
+              type="button"
+              onClick={resetCaptcha}
+              className="text-blue-500 mt-2"
+            >
+              Обновить капчу
+            </button>
+          )}
 
           <div className="mt-6 hover:scale-105 transition">
-            <Button type="submit" className="w-full">Sign in</Button>
+            <Button type="submit" className="w-full">Войти</Button>
           </div>
 
           <div className="mt-4 text-center">
-            Don't have an account?{" "}
+            Нет аккаунта?{" "}
             <button
               type="button"
               onClick={changeAuthorizationState}
               className="text-blue-500 hover:underline"
             >
-              Register
+              Зарегистрироваться
             </button>
           </div>
         </form>
@@ -150,4 +176,4 @@ export default function Login({ changeAuthorizationState }) {
 
 Login.propTypes = {
   changeAuthorizationState: PropTypes.func.isRequired,
-}
+};

@@ -1,52 +1,25 @@
-name: Simple-SSH-Deploy
-
-on:
-  push:
-    branches: [main]       # деплой при push в main
-  workflow_dispatch:       # запуск вручную
-
-jobs:
-  deploy:
-    runs-on: ubuntu-latest
-
-    steps:
-      # 1) скачиваем репозиторий в CI
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      # 2) закидываем свежие файлы на сервер (перетираем старые)
-      - name: Sync code to server via SCP
-        uses: appleboy/scp-action@v0.1.4
-        with:
-          host:     ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key:      ${{ secrets.SSH_KEY }}
-          port:     ${{ secrets.SSH_PORT || 22 }}
-          source:   "./"            # весь репо
-          target:   "/opt/mail"     # путь на сервере
-          strip_components: 1       # убираем верхнюю папку
-          recursive: true
-          exclude: |                # не тащим тяжести
-            .git/
-            .env
-            .env.backend
-            *.db
-
-      # 3) перезапускаем контейнеры
-      - name: Run docker‑compose on server
-        uses: appleboy/ssh-action@v1.2.2
-        with:
-          host:     ${{ secrets.SSH_HOST }}
-          username: ${{ secrets.SSH_USER }}
-          key:      ${{ secrets.SSH_KEY }}
-          port:     ${{ secrets.SSH_PORT || 22 }}
-          script: |
-      
-            set -e
-            cd /opt/mail
-            # загружаем переменные
-            export $(grep -Ev '^\s*(#|$)' .env.backend  | xargs)
-            export $(grep -Ev '^\s*(#|$)' .env.frontend | xargs)
-            docker-compose down --remove-orphans
-            docker-compose up -d --build
-            docker image prune -f
+- name: Run docker-compose on server
+  uses: appleboy/ssh-action@v1.2.2
+  with:
+    host: ${{ secrets.SSH_HOST }}
+    username: ${{ secrets.SSH_USER }}
+    key: ${{ secrets.SSH_KEY }}
+    port: ${{ secrets.SSH_PORT || 22 }}
+    script: |
+      set -e
+      cd /opt/mail
+      # Проверяем наличие .env файлов
+      if [ ! -f .env.frontend ]; then
+        echo "Error: .env.frontend not found"
+        exit 1
+      fi
+      if [ ! -f .env.backend ]; then
+        echo "Error: .env.backend not found"
+        exit 1
+      fi
+      # Загружаем переменные
+      export $(grep -Ev '^\s*(#|$)' .env.backend  | xargs)
+      export $(grep -Ev '^\s*(#|$)' .env.frontend | xargs)
+      docker-compose down --remove-orphans
+      docker-compose up -d --build --no-cache
+      docker image prune -f

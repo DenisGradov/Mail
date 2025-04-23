@@ -1,4 +1,4 @@
-import {useUserStore} from "../Store/Index.js";
+import {useUserStore} from "../../Store/Index.js";
 import { FaSun, FaMoon } from 'react-icons/fa';
 import PropTypes from "prop-types";
 

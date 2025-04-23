@@ -41,10 +41,10 @@ const Input = forwardRef(function Input(
       />
       {type === 'password' && (
         <span
-          className="hover-anim w-[42px] absolute ml-[-40px] top-[50%] -translate-y-1/2 text-black text-[23px]"
+          className="hover-anim w-[42px] absolute ml-[-15px] 375px:ml-[-40px] top-[50%] -translate-y-1/2 text-black text-[23px]"
           onClick={handleChangeHidden}
         >
-          {passwordHidden?<FaEye/> : <FaEyeSlash/> }
+          {passwordHidden?<FaEye className="text-[15px] text-primary 375px:text-[23px] 375px:text-icons"/> : <FaEyeSlash className="text-[15px] text-primary 375px:text-[23px] 375px:text-icons"/> }
         </span>
       )}
     </div>
