@@ -46,8 +46,6 @@ jobs:
             set -e
             cd /opt/mail
             # загружаем переменные
-            export $(grep -Ev '^\s*(#|$)' .env.backend  | xargs)
-            export $(grep -Ev '^\s*(#|$)' .env.frontend | xargs)
             docker-compose down --remove-orphans
             docker-compose up -d --build
             docker image prune -f

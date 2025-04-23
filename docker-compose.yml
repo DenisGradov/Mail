@@ -7,14 +7,16 @@ services:
       - "5050:5050"
       - "25:2525"
     env_file:
-      - .env
+      - .env.backend
     volumes:
       - ./Backend/DataBase:/app/DataBase
     restart: unless-stopped
 
+
+
   nginx:
     build:
-      context: .
+      context: .                 # контекст — корень репо, где лежит Frontend/
       dockerfile: ./nginx/Dockerfile
     ports:
       - "80:80"
