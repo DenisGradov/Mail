@@ -224,8 +224,8 @@ router.post("/setup-2fa", async (req, res) => {
     }
 
     const secret = speakeasy.generateSecret({
-      name: `YourApp:${user.email}`,
-      issuer: "YourApp",
+      name: `StenMail:${user.email}`,
+      issuer: "StenMail",
     });
 
     await require("../DataBase/functions/updateUser").updateUser(user.id, {
