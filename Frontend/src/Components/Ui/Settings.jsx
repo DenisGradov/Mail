@@ -23,7 +23,14 @@ function Settings() {
     newPassword: "",
   });
 
-  const [avatarPreview, setAvatarPreview] = useState(user.avatar || "");
+  // Инициализация avatarPreview только если user.avatar является валидным base64
+  const [avatarPreview, setAvatarPreview] = useState(() => {
+    if (user.avatar && typeof user.avatar === "string" && user.avatar.startsWith("data:image/")) {
+      return user.avatar;
+    }
+    return "";
+  });
+
   const [errors, setErrors] = useState({
     oldPassword: "",
     newPassword: "",
@@ -96,16 +103,19 @@ function Settings() {
 
     if (!file) {
       setErrors((prev) => ({ ...prev, avatar: "No file selected." }));
+      setAvatarPreview(user.avatar && user.avatar.startsWith("data:image/") ? user.avatar : "");
       return;
     }
 
     if (!validTypes.includes(file.type)) {
       setErrors((prev) => ({ ...prev, avatar: "Invalid file type. Only JPEG, PNG, and GIF are allowed." }));
+      setAvatarPreview(user.avatar && user.avatar.startsWith("data:image/") ? user.avatar : "");
       return;
     }
 
     if (file.size > maxSize) {
       setErrors((prev) => ({ ...prev, avatar: "File size exceeds 10MB." }));
+      setAvatarPreview(user.avatar && user.avatar.startsWith("data:image/") ? user.avatar : "");
       return;
     }
 
@@ -117,14 +127,16 @@ function Settings() {
 
     try {
       const response = await updateUserAvatar(formData);
-      if (response?.success) {
+      if (response?.success && response.avatar) {
         setErrors((prev) => ({ ...prev, avatar: "" }));
+        // Синхронизация avatarPreview с user.avatar
+        setAvatarPreview(response.avatar);
       } else {
-        setAvatarPreview(user.avatar || "");
+        setAvatarPreview(user.avatar && user.avatar.startsWith("data:image/") ? user.avatar : "");
         setErrors((prev) => ({ ...prev, avatar: response?.error || "Failed to upload avatar." }));
       }
     } catch (err) {
-      setAvatarPreview(user.avatar || "");
+      setAvatarPreview(user.avatar && user.avatar.startsWith("data:image/") ? user.avatar : "");
       setErrors((prev) => ({ ...prev, avatar: err.message || "Network error occurred. Please try again." }));
     }
   };
@@ -210,19 +222,34 @@ function Settings() {
     setSaveButtonActive(isFormChanged());
   }, [form]);
 
+  // Очистка blob URL только при размонтировании компонента
   useEffect(() => {
     return () => {
       if (avatarPreview && avatarPreview.startsWith("blob:")) {
         URL.revokeObjectURL(avatarPreview);
       }
     };
-  }, [avatarPreview]);
+  }, []);
+
+  // Синхронизация avatarPreview с user.avatar при изменении user.avatar
+  useEffect(() => {
+    if (user.avatar && user.avatar.startsWith("data:image/")) {
+      setAvatarPreview(user.avatar);
+    } else {
+      setAvatarPreview("");
+    }
+  }, [user.avatar]);
+
+  // Проверка валидности изображения
+  const isValidImage = (src) => {
+    return src && typeof src === "string" && (src.startsWith("data:image/") || src.startsWith("blob:"));
+  };
 
   return (
     <div className="w-full h-full p-[15px] max-w-[1100px] m-auto overflow-auto">
       <div className="flex items-center">
         <div>
-          {avatarPreview ? (
+          {isValidImage(avatarPreview) ? (
             <img src={avatarPreview} alt="User Avatar" className="w-[40px] h-[40px] rounded-full" />
           ) : (
             <EmptyAvatar className="flex items-center justify-center w-[40px] h-[40px]" name={form.name} />
@@ -236,7 +263,7 @@ function Settings() {
           <span className="text-text-primary text-[18px]">Upload avatar</span>
           <input
             type="file"
-            accept="image/jpeg, image/png, image/gif"
+            accept="image/jpeg,image/png,image/gif"
             onChange={handleAvatarChange}
           />
           {errors.avatar && <p className="text-red-500 mt-1">{errors.avatar}</p>}
@@ -367,7 +394,11 @@ function Settings() {
         <div className="flex items-center 375px:flex-row flex-col">
           <img src="googl.svg" className="w-[50px]" alt="Google Authenticator" />
           <div className="flex flex-col ml-[20px]">
-            <span className="text-[16px] font-medium text-text-primary 375px:my-[0] my-[12px]">Google Authenticator: <span className={`text-[17px] ${user.two_factor_enabled ? "text-green-500" : "text-red-500"}`}>{user.two_factor_enabled ? "connected" : "disabled"}</span></span>
+            <span className="text-[16px] font-medium text-text-primary 375px:my-[0] my-[12px]">
+              Google Authenticator: <span className={`text-[17px] ${user.two_factor_enabled ? "text-green-500" : "text-red-500"}`}>
+                {user.two_factor_enabled ? "connected" : "disabled"}
+              </span>
+            </span>
             <span className="text-[15px] text-text-secondary-60">
               Requires a code from an authenticator app when signing in and enhances account security.
             </span>
@@ -376,7 +407,7 @@ function Settings() {
         <div>
           <button
             onClick={handleAddFa}
-            className="hover-anim py-[8px] px-[20px] text-primary border border-primary rounded-[10px]  375px:mt-[0] mt-[12px]"
+            className="hover-anim py-[8px] px-[20px] text-primary border border-primary rounded-[10px] 375px:mt-[0] mt-[12px]"
           >
             {user.two_factor_enabled ? "Disable" : "Connect"}
           </button>
