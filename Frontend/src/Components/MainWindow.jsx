@@ -60,6 +60,9 @@ export default function MainWindow() {
     toggleViewed(mail.id, true);
     setIsMailOpen(mail);
   };
+  const handleMailClose = () => {
+    setIsMailOpen(false);
+  };
 
   const handleContextWindowOpen = (id, x, y) => {
     const windowWidth = window.innerWidth;
@@ -230,6 +233,7 @@ export default function MainWindow() {
           isMailOpen={isMailOpen}
           isSettingsOpen={isSettingsOpen}
           handleMailOpen={handleMailOpen}
+          handleMailClose={handleMailClose}
           handleSettingsOpen={handleSettingsOpen}
           searchInput={searchInput}
           handleSearchInputUpdate={handleSearchInputUpdate}

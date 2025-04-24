@@ -4,7 +4,7 @@ import EmptyAvatar from "../Ui/EmptyAvatar.jsx";
 import { useUserStore } from "../../Store/Index.js";
 import PropTypes from "prop-types";
 
-function Header({ isMailOpen, isSettingsOpen, handleMailOpen, handleSettingsOpen, searchInput, handleSearchInputUpdate }) {
+function Header({ isMailOpen, isSettingsOpen, handleMailOpen, handleMailClose, handleSettingsOpen, searchInput, handleSearchInputUpdate }) {
   const { user } = useUserStore();
 
   return (
@@ -15,7 +15,7 @@ function Header({ isMailOpen, isSettingsOpen, handleMailOpen, handleSettingsOpen
         <div className={`text-[17px] font-bold left-[16px] ${isSettingsOpen && "flex items-center"}`}>
           <FaArrowLeft
             onClick={() => {
-              if (isMailOpen) handleMailOpen(false);
+              if (isMailOpen) handleMailClose();
               if (isSettingsOpen) handleSettingsOpen();
             }}
             className="text-[32px] hover-anim cursor-pointer"
