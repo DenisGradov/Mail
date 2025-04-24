@@ -31,7 +31,7 @@ export default function MainWindow() {
   const [selectedMails, setSelectedMails] = useState([]);
   const [searchInput, setSearchInput] = useState("");
   const [sortType, setSortType] = useState("newest");
-  const [isSettingsOpen, setIsSettingsOpen] = useState(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isMailOpen, setIsMailOpen] = useState(false);
   const [isContextWindowOpen, setIsContextWindowOpen] = useState({ state: false, x: 0, y: 0, id: "" });
   const [newMail, setNewMail] = useState(false);
