@@ -10,7 +10,7 @@ import { useMailStore } from "../Store/Index.js";
 import { useMediaQuery } from "../hooks/useMediaQuery.js";
 import SendEmail from "./Ui/SendEmail.jsx";
 import MailView from "./Ui/MailView.jsx";
-import Settings from "./Ui/Settings.jsx";
+import Settings from "./Settings/Settings.jsx";
 import Clarification from "./Ui/Clarification.jsx";
 import Sidebar from "./MainWindow/Sidebar.jsx";
 import Header from "./MainWindow/Header.jsx";
@@ -20,6 +20,8 @@ import Pagination from "./MainWindow/Pagination.jsx";
 import MailActions from "./MainWindow/MailActions.jsx";
 import Line from "./Ui/Line.jsx";
 import Authentication from "./Auth/Authentication.jsx";
+import Domains from "./Settings/Domains.jsx";
+import Users from "./Settings/Users.jsx";
 
 export default function MainWindow() {
   const { logoutUser, user } = useUserStore();
@@ -39,6 +41,12 @@ export default function MainWindow() {
   const [currentPage, setCurrentPage] = useState(1);
   const allMails = [...inbox, ...sent];
   const favoriteCount = allMails.filter((m) => m.favorite).length;
+  const buttons = ["Profile","Domains","Users"]
+  const [tabOpen, setTabOpen] = useState(0);
+  const handleSettingsTabOpen = (idTab) => {
+    setTabOpen(idTab||0);
+  }
+
   const tabs = {
     Inbox: { title: "Inbox", icon: <FaInbox />, value: inbox.length },
     Sent: { title: "Sent", icon: <FaArrowCircleRight />, value: sent.length },
@@ -75,7 +83,6 @@ export default function MainWindow() {
     const newY = y + menuOffsetY + menuHeight > windowHeight ? windowHeight - menuHeight - 10 : y + menuOffsetY;
     setIsContextWindowOpen({ state: true, id, x: newX, y: newY });
   };
-
   const handleContextAction = async (action) => {
     const ids = Array.isArray(isContextWindowOpen.id) ? isContextWindowOpen.id : [isContextWindowOpen.id];
     if (action === "delete") {
@@ -240,8 +247,9 @@ export default function MainWindow() {
         />
         {!isSettingsOpen && (
           <>
-            <Line />
-            <div className="470px:flex-row flex-col 375px:mx-[20px] my-[10px] flex justify-between 470px:items-center w-full">
+            <Line/>
+            <div
+              className="470px:flex-row flex-col 375px:mx-[20px] my-[10px] flex justify-between 470px:items-center w-full">
               <MailActions
                 isMailOpen={isMailOpen}
                 selectedMails={selectedMails}
@@ -270,9 +278,12 @@ export default function MainWindow() {
                 handleNextMail={handleNextMail}
               />
             </div>
-            <Line />
+            <Line/>
           </>
         )}
+
+
+
         {!isMailOpen && !isSettingsOpen && (
           <MailList
             isMailOpen={isMailOpen}
@@ -286,18 +297,31 @@ export default function MainWindow() {
             isDesktop={isDesktop}
           />
         )}
-        {isMailOpen && <MailView mail={isMailOpen} />}
+        {isMailOpen && <MailView mail={isMailOpen}/>}
         {isSettingsOpen && (
           <div className="flex-1 overflow-y-auto">
-            <Settings />
+            <div className="ml-[20px] flex items-center fixed bg-bg-main z-10 w-full py-[4px]">
+              {buttons.map((button, index) => (
+                <div
+                  className={`mr-[30px] px-[10px] py-[1px] hover-anim-n  ${tabOpen === index ? "text-primary text-[16px] font-bold border-b-2 border-primary" : "hover:border-b-2 hover:border-text-secondary-60 text-text-secondary-60 "}`}
+                  key={`tab ${index}`}
+                onClick={()=>handleSettingsTabOpen(index)}>{button}</div>
+              ))}
+            </div>
+            <div className="p-[5px] mt-[25px]">
+
+              {tabOpen===0&&<Settings/>}
+              {tabOpen===1&&user.status===2&&<Domains/>}
+              {tabOpen===2&&user.status===2&&<Users/>}
+            </div>
           </div>
         )}
-        <ContextMenu isContextWindowOpen={isContextWindowOpen} handleContextAction={handleContextAction} />
+        <ContextMenu isContextWindowOpen={isContextWindowOpen} handleContextAction={handleContextAction}/>
       </div>
       {newMail && (
         <div className="absolute inset-0 z-40 w-full h-full">
           <div className="w-full h-full bg-bg-main/60 backdrop-blur-sm"></div>
-          <SendEmail handleNewMail={handleNewMail} />
+          <SendEmail handleNewMail={handleNewMail}/>
         </div>
       )}
       {wantLogout && (

@@ -25,6 +25,9 @@ body {
 .hover-anim{
   @apply cursor-pointer duration-300 hover:scale-[1.01] select-none opacity-85;
 }
+.hover-anim-n{
+  @apply cursor-pointer hover:scale-[1.01] select-none opacity-85;
+}
 
 a{
   text-decoration: none;

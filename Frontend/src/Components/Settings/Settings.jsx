@@ -1,9 +1,9 @@
 import { useUserStore } from "../../Store/Index.js";
 import { useState, useEffect } from "react";
-import EmptyAvatar from "./EmptyAvatar.jsx";
-import Line from "./Line.jsx";
-import InputLabel from "./InputLabel.jsx";
-import Input from "./Input.jsx";
+import EmptyAvatar from "../Ui/EmptyAvatar.jsx";
+import Line from "../Ui/Line.jsx";
+import InputLabel from "../Ui/InputLabel.jsx";
+import Input from "../Ui/Input.jsx";
 import { updateUserData } from "../../Api/UserApi.js";
 import Authentication from "../Auth/Authentication.jsx";
 import { setup2FA, disable2FA } from "../../Api/Auth.js";
@@ -45,6 +45,8 @@ function Settings() {
   const [addFA, setAddFA] = useState(false);
   const [qrCode, setQrCode] = useState("");
   const [secret, setSecret] = useState("");
+
+
 
   const isFormChanged = () => {
     return (
@@ -246,7 +248,8 @@ function Settings() {
   };
 
   return (
-    <div className="w-full h-full p-[15px] max-w-[1100px] m-auto overflow-auto">
+    <div className="w-full h-full p-[15px] m-auto">
+
       <div className="flex items-center">
         <div>
           {isValidImage(avatarPreview) ? (
@@ -429,6 +432,7 @@ function Settings() {
           />
         </div>
       )}
+      <div className="opacity-0">s</div>
     </div>
   );
 }
