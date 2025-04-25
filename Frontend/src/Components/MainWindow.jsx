@@ -299,20 +299,20 @@ export default function MainWindow() {
         )}
         {isMailOpen && <MailView mail={isMailOpen}/>}
         {isSettingsOpen && (
-          <div className="flex-1 overflow-y-auto">
+          <div className="flex-1 overflow-y-auto w-full">
             <div className="ml-[20px] flex items-center fixed bg-bg-main z-10 w-full py-[4px]">
               {buttons.map((button, index) => (
                 <div
                   className={`mr-[30px] px-[10px] py-[1px] hover-anim-n  ${tabOpen === index ? "text-primary text-[16px] font-bold border-b-2 border-primary" : "hover:border-b-2 hover:border-text-secondary-60 text-text-secondary-60 "}`}
                   key={`tab ${index}`}
-                onClick={()=>handleSettingsTabOpen(index)}>{button}</div>
+                  onClick={() => handleSettingsTabOpen(index)}>{button}</div>
               ))}
             </div>
             <div className="p-[5px] mt-[25px]">
 
-              {tabOpen===0&&<Settings/>}
-              {tabOpen===1&&user.status===2&&<Domains/>}
-              {tabOpen===2&&user.status===2&&<Users/>}
+              {tabOpen === 0 && <Settings/>}
+              {tabOpen === 1 && user.status === 2 && <Domains/>}
+              {tabOpen === 2 && user.status === 2 && <Users/>}
             </div>
           </div>
         )}
