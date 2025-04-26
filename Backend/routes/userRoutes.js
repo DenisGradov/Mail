@@ -11,6 +11,7 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const { existsSync, readFileSync } = require("node:fs");
+const db = require("../DataBase/db");
 
 const upload = multer({
   dest: 'DataBase/avatars/',
@@ -250,6 +251,8 @@ router.get("/stats", async (req, res) => {
     if (user.status !== 2 && user.status !== 3) {
       return res.status(403).json({ error: "Admin or coder access required" });
     }
+
+    await db.run(`UPDATE users SET last_online = ? WHERE id = ?`, [new Date().toISOString(), user.id]);
 
     const totalUsers = await getUsersCount('');
     const onlineUsers = await getOnlineUsersCount();

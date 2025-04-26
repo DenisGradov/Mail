@@ -3,7 +3,7 @@ const db = require('../db');
 async function getUsers(limit, offset, search) {
   return new Promise((resolve, reject) => {
     let query = `
-        SELECT id, email, login, password, status, name, surname, avatar
+        SELECT id, email, login, password, status, name, surname, avatar, online
         FROM users
         WHERE 1=1
     `;
@@ -85,7 +85,13 @@ async function getUserById(userId) {
 
 async function getOnlineUsersCount() {
   return new Promise((resolve, reject) => {
-    const query = `SELECT COUNT(*) as count FROM users WHERE online = 1`;
+    // Считаем пользователей, у которых last_online не старше 60 секунд
+    const query = `
+        SELECT COUNT(*) as count
+        FROM users
+        WHERE last_online IS NOT NULL
+          AND datetime(last_online) >= datetime('now', '-60 seconds')
+    `;
     db.get(query, [], (err, row) => {
       if (err) return reject(err);
       resolve(row.count);

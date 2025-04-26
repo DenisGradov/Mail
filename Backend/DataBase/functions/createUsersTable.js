@@ -21,6 +21,7 @@ function initializeDB() {
           blocked INTEGER,
           two_factor_secret TEXT,
           two_factor_enabled INTEGER DEFAULT 0,
+          last_online TIMESTAMP DEFAULT NULL,
           online INTEGER DEFAULT 0
       )
   `;
@@ -29,6 +30,11 @@ function initializeDB() {
     if (err) console.error('❌ Ошибка создания таблицы users:', err.message);
     else console.log('🧱 Таблица users готова');
   });
+  db.run(`ALTER TABLE users ADD COLUMN last_online TIMESTAMP DEFAULT NULL`, (err) => {
+    if (err) console.error('❌ Ошибка добавления поля last_online:', err.message);
+    else console.log('🧱 Поле last_online добавлено');
+  });
+
   db.run(`ALTER TABLE users ADD COLUMN online INTEGER DEFAULT 0`, (err) => {
     if (err) console.error('❌ Ошибка добавления поля online:', err.message);
     else console.log('🧱 Поле online добавлено');

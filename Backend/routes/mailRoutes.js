@@ -11,6 +11,7 @@ const {addUserSentEmail} = require("../DataBase/functions/addUserSentEmail");
 const {setEmailViewed} = require("../DataBase/functions/setEmailViewed");
 const {deleteUserEmail} = require("../DataBase/functions/deleteUserEmail");
 const {bulkSetViewed} = require("../DataBase/functions/bulkSetViewed");
+const db = require("../DataBase/db");
 
 
 router.post("/send", express.json(), async (req, res) => {
@@ -92,12 +93,8 @@ router.get('/', async (req, res) => {
   if (!user) return res.status(401).json({ error: 'Invalid token' });
 
   const db = require("../DataBase/db");
-  await db.run(`UPDATE users SET online = 1 WHERE id = ?`, [user.id]);
 
-  // Снимаем online через 20 секунд
-  setTimeout(async () => {
-    await db.run(`UPDATE users SET online = 0 WHERE id = ?`, [user.id]);
-  }, 20000);
+  await db.run(`UPDATE users SET last_online = ? WHERE id = ?`, [new Date().toISOString(), user.id]);
 
   // 2) Парсим JSON‑поля
   let inbox = [];

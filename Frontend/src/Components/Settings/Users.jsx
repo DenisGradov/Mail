@@ -60,9 +60,9 @@ function Users() {
 
   const usersCanBeOnPage = [5, 10, 50, 100, 200, 500];
 
-  const fetchData = async () => {
+  const fetchData = async (loader = false) => {
     try {
-      showLoader();
+      if (loader)showLoader();
       const userData = await getUsers(undefined, currentPage, searchInput);
       setUsers(userData.users);
       setTotalUsers(userData.total);
@@ -83,13 +83,15 @@ function Users() {
     } catch (err) {
       setError(err.error || "Failed to load data");
     } finally {
-      hideLoader();
+      if (loader)hideLoader();
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [searchInput, currentPage, usersOnPage]);
+    fetchData(true);
+    const iv = setInterval(()=>fetchData(false), 15000);
+    return () => clearInterval(iv);
+  }, []);
 
   const handleSearchInputUpdate = (e) => {
     setSearchInput(e.target.value);
@@ -316,12 +318,13 @@ function Users() {
               onClick={() => handleUserClick(user.id)}
               className="grid grid-cols-[40px_1fr_1fr_1fr_1fr_1fr] gap-4 min-w-[1200px] w-full py-2 border-t border-stroke hover:bg-bg-hover cursor-pointer"
             >
-              <div className="flex items-center gap-2">
-                <span>{user.status === 3 ? "000000" : user.id}</span>
+              <div className="relative flex items-center gap-2">
+                {user.online?<span className="absolute left-[-12px] w-[7px] h-[7px] rounded-full bg-primary"/>:null}
+                <span>{user.status === 3 ? "dev" : user.id}</span>
               </div>
               <span className="flex items-center gap-2 whitespace-nowrap">
                 <EmptyAvatar name={user.name || user.login} mode="placeholder" />
-                <span>{getShortText(`${user.name || ""} ${user.surname || ""}`, window.innerWidth < 470 ? 20 : 30, false)}</span>
+                <span>{getShortText(`${user.name || ""} ${user.surname || ""}`, window.innerWidth < 470 ? 13 : 13, false)}</span>
               </span>
               <span className="flex items-center gap-2">
                 {getShortText(user.email || "", window.innerWidth > 470 ? (window.innerWidth < 1600 ? 17 : 24) : 17, false)}

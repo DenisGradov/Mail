@@ -61,6 +61,7 @@ function Domains() {
     if (errorDetails) {
       console.error(errorDetails);
     }
+
   }, [errorDetails]);
 
   const handleRefresh = async (domain) => {

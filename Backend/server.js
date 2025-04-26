@@ -12,6 +12,7 @@ const mailRoutes = require('./routes/mailRoutes');
 const userRoutes = require('./routes/userRoutes');
 const { initializeDB } = require('./DataBase/functions/createUsersTable');
 const {initializeEmailsTable} = require("./DataBase/functions/createEmailsTable");
+const {startOnlineStatusUpdater} = require("./services/onlineStatusUpdater");
 
 const app = express();
 const PORT = process.env.BACKEND_PORT || 5005;
@@ -51,10 +52,10 @@ app.get('/health', (req, res) => {
 });
 
 initializeDB();
+startOnlineStatusUpdater();
 
 
 require('./services/smtp');
-const {updateUser} = require("./DataBase/functions/updateUser");
 
 app.listen(PORT, () => {
   console.log(`🚀 Сервер запущен на http://localhost:${PORT}`);
