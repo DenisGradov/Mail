@@ -137,7 +137,7 @@ export default function Registration({ changeAuthorizationState }) {
         <form onSubmit={handleSubmit} className="w-full max-w-md">
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <InputLabel text="Name" />
+              <InputLabel required={true} text="Name" />
               <Input
                 name="name"
                 type="text"
@@ -149,7 +149,7 @@ export default function Registration({ changeAuthorizationState }) {
               {errors.name && <p className="text-red-500 mt-1">{errors.name}</p>}
             </div>
             <div>
-              <InputLabel text="Surname" />
+              <InputLabel required={true} text="Surname" />
               <Input
                 name="surname"
                 type="text"
@@ -162,7 +162,7 @@ export default function Registration({ changeAuthorizationState }) {
             </div>
           </div>
 
-          <InputLabel text="Login" className="mt-4" />
+          <InputLabel required={true} text="Login" className="mt-4" />
           <Input
             name="login"
             type="text"
@@ -174,7 +174,7 @@ export default function Registration({ changeAuthorizationState }) {
           {errors.login && <p className="text-red-500 mt-1">{errors.login}</p>}
 
           <div className="mt-4 flex justify-between items-center">
-            <InputLabel text="Password" />
+            <InputLabel required={true} text="Password" />
             <div className="hover-anim" onClick={handleGenerate}>
               <InputLabel text="Generate" />
             </div>

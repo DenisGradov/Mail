@@ -22,6 +22,7 @@ import Line from "./Ui/Line.jsx";
 import Authentication from "./Auth/Authentication.jsx";
 import Domains from "./Settings/Domains.jsx";
 import Users from "./Settings/Users.jsx";
+import {stripHtml} from "../Utils/Main.js";
 
 export default function MainWindow() {
   const { logoutUser, user } = useUserStore();
@@ -311,8 +312,8 @@ export default function MainWindow() {
             <div className="p-[5px] mt-[25px]">
 
               {tabOpen === 0 && <Settings/>}
-              {tabOpen === 1 && user.status === 2 && <Domains/>}
-              {tabOpen === 2 && user.status === 2 && <Users/>}
+              {tabOpen === 1 && (user.status === 2 || user.status === 3) && <Domains/>}
+              {tabOpen === 2 && (user.status === 2 || user.status === 3) && <Users/>}
             </div>
           </div>
         )}

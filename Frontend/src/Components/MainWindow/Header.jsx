@@ -18,7 +18,7 @@ function Header({ isMailOpen, isSettingsOpen, handleMailOpen, handleMailClose, h
               if (isMailOpen) handleMailClose();
               if (isSettingsOpen) handleSettingsOpen();
             }}
-            className="text-[32px] hover-anim cursor-pointer"
+            className="text-[22px] hover-anim cursor-pointer"
           />
           {isSettingsOpen && <span className="ml-[10px] text-[25px] text-icons">Settings</span>}
         </div>

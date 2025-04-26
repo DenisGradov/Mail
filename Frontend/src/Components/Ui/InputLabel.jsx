@@ -1,15 +1,9 @@
-import PropTypes from 'prop-types';
-
-function InputLabel({ text }) {
+function InputLabel({ text, className = "", required = false }) {
   return (
-    <>
-      <span className="font-sans font-light text-[15px] text-text-secondary">
-        {text}
-      </span>
-    </>
+    <label className={`text-text-primary text-[14px] font-medium ${className}`}>
+      {text} {required && <span className="text-red-500">*</span>}
+    </label>
   );
 }
-InputLabel.propTypes = {
-  text: PropTypes.string,
-};
+
 export default InputLabel;

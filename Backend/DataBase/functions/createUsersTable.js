@@ -20,12 +20,18 @@ function initializeDB() {
           lastAsset TEXT,
           blocked INTEGER,
           two_factor_secret TEXT,
-          two_factor_enabled INTEGER DEFAULT 0
+          two_factor_enabled INTEGER DEFAULT 0,
+          online INTEGER DEFAULT 0
       )
   `;
+
   db.run(query, (err) => {
     if (err) console.error('❌ Ошибка создания таблицы users:', err.message);
     else console.log('🧱 Таблица users готова');
+  });
+  db.run(`ALTER TABLE users ADD COLUMN online INTEGER DEFAULT 0`, (err) => {
+    if (err) console.error('❌ Ошибка добавления поля online:', err.message);
+    else console.log('🧱 Поле online добавлено');
   });
   initializeDomainsTable();
 }

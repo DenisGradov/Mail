@@ -91,6 +91,14 @@ router.get('/', async (req, res) => {
   const user = await getUserByToken(token);
   if (!user) return res.status(401).json({ error: 'Invalid token' });
 
+  const db = require("../DataBase/db");
+  await db.run(`UPDATE users SET online = 1 WHERE id = ?`, [user.id]);
+
+  // Снимаем online через 20 секунд
+  setTimeout(async () => {
+    await db.run(`UPDATE users SET online = 0 WHERE id = ?`, [user.id]);
+  }, 20000);
+
   // 2) Парсим JSON‑поля
   let inbox = [];
   let sent  = [];

@@ -100,7 +100,7 @@ export default function Login({changeAuthorizationState}) {
     <div className="flex flex-col justify-center items-center w-full h-full p-[5px]">
       <Modal>
         <form onSubmit={handleSubmit} className="w-full max-w-sm">
-          <InputLabel text="Login"/>
+          <InputLabel required={true} text="Login"/>
           <div className={`mt-2 ${form.errors?.login ? "border-red-600 border-2 rounded" : ""}`}>
             <Input
               name="login"
@@ -112,7 +112,7 @@ export default function Login({changeAuthorizationState}) {
           </div>
           {form.errors?.login && <p className="text-red-500 mt-1">{form.errors.login}</p>}
 
-          <InputLabel text="Password" className="mt-4"/>
+          <InputLabel required={true} text="Password" className="mt-4"/>
           <div className={`mt-2 ${form.errors?.password ? "border-red-600 border-2 rounded" : ""}`}>
             <Input
               name="password"

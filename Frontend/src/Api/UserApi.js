@@ -9,16 +9,7 @@ export const updateUserData = async (userDetails) => {
       userDetails,
       { withCredentials: true }
     );
-
-    if (response.status === 200) {
-      return response.data;
-    }
-
-    if (response.status === 400) {
-      return response.data;
-    }
-
-    throw new Error('Unexpected error occurred.');
+    return response.data;
   } catch (error) {
     console.error("Error updating user details:", error.response?.data || error.message);
     if (error.response?.data) {
@@ -40,13 +31,79 @@ export const updateAvatar = async (formData) => {
         withCredentials: true
       }
     );
-
-    if (response.status === 200) {
-      return response.data;
-    }
-    return { error: "Failed to upload avatar" };
+    return response.data;
   } catch (error) {
     console.error("Error uploading avatar:", error.response?.data || error.message);
-    return { error: "Network error occurred. Please try again later." };
+    throw error.response?.data || { error: "Network error occurred. Please try again later." };
+  }
+};
+
+export const getUsers = async (limit, page, search) => {
+  try {
+    const response = await axios.get(
+      `${backendUrl}/users/users`,
+      {
+        params: { limit, page, search },
+        withCredentials: true
+      }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching users:", error.response?.data || error.message);
+    throw error.response?.data || { error: "Network error occurred. Please try again later." };
+  }
+};
+
+export const addUser = async (userData) => {
+  try {
+    const response = await axios.post(
+      `${backendUrl}/users/add`,
+      userData,
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error adding user:", error.response?.data || error.message);
+    throw error.response?.data || { error: "Network error occurred. Please try again later." };
+  }
+};
+
+export const deleteUsers = async (userIds) => {
+  try {
+    const response = await axios.post(
+      `${backendUrl}/users/delete`,
+      { userIds },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error deleting users:", error.response?.data || error.message);
+    throw error.response?.data || { error: "Network error occurred. Please try again later." };
+  }
+};
+
+export const updateUserStatus = async (userIds, status) => {
+  try {
+    const response = await axios.post(
+      `${backendUrl}/users/update-status`,
+      { userIds, status },
+      { withCredentials: true }
+    );
+    return response.data;
+  } catch (error) {
+    console.error("Error updating user status:", error.response?.data || error.message);
+    throw error.response?.data || { error: "Network error occurred. Please try again later." };
+  }
+};
+
+export const getUserStats = async () => {
+  try {
+    const response = await axios.get(`${backendUrl}/users/stats`, {
+      withCredentials: true,
+    });
+    return response.data;
+  } catch (error) {
+    console.error("Error fetching user stats:", error.response?.data || error.message);
+    throw error.response?.data || { error: "Network error occurred. Please try again later." };
   }
 };
