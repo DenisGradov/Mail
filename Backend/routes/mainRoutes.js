@@ -15,7 +15,7 @@ router.post('/check-domains', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    if (user.status !== 2) {
+    if (user.status !== 2 && user.status !== 3) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -76,7 +76,7 @@ router.post('/add-domain', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    if (user.status !== 2) {
+    if (user.status !== 2 && user.status !== 3) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -107,7 +107,7 @@ router.post('/delete-domain', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    if (user.status !== 2) {
+    if (user.status !== 2 && user.status !== 3) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
@@ -138,7 +138,7 @@ router.get('/domains', async (req, res) => {
     if (!user) {
       return res.status(401).json({ error: 'Invalid token' });
     }
-    if (user.status !== 2) {
+    if (user.status !== 2 && user.status !== 3) {
       return res.status(403).json({ error: 'Admin access required' });
     }
 
